@@ -20,3 +20,8 @@ Append-only. Every entry records a choice a future agent might be tempted to rev
 11. **Stray-output defense lives in the transport, in two parts.** An output buffer opens at `rest_api_init` for MCP requests, and all buffers are discarded in `rest_pre_serve_request` just before the JSON body is written. Other plugins do emit notices on REST requests; do not remove this because the local site happens to be clean.
 12. **The local development site is a fresh WordPress install, not the planned clone of outsourcewebdesign.com.** Discovered during the Phase 0 survey on 2026-07-27. All test conditions from ENVIRONMENT-SETUP.md section 7 therefore come from `tests/seed-conditions.sh` until a real clone is imported. If a clone is imported later, re-run the survey before trusting seed assumptions.
 13. **`composer.lock` is not committed.** Dev dependencies are two mature, stable packages (PHPCS, WPCS) resolved fresh in CI; a lock file in a dependency-free plugin repo invites noise PRs. Revisit only if CI ever breaks on a resolver change.
+
+## Phase 1
+
+14. **Token-in-path authentication is permanent; OAuth is off the table.** Confirmed working end-to-end on 2026-07-27: the connector is live in Claude Chat against `https://www.outsourcewebdesign.com` and `get_capabilities` returns correctly over public HTTPS. Do not build OAuth 2.1/PKCE "for completeness" — the swappable auth interface stays as insurance, nothing more.
+15. **Tools are auto-discovered from `includes/mcp/tools/`.** Adding a tool means dropping one `class-tool-{name}.php` file there; the registry derives the class name from the file name and calls its static `register()`. Do not add a manual registration list that has to be kept in sync.
