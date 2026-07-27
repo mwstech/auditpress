@@ -88,6 +88,19 @@ class PluginLens_Tool_List_Plugins {
 		$collector = new PluginLens_Inventory_Collector();
 		$records   = $collector->collect();
 
+		// Version-matched vulnerability presence, as a boolean flag only
+		// (docs/DECISIONS.md 18). When the source is unavailable the flag is
+		// simply absent and _meta.sources_unavailable says so.
+		$manager       = new PluginLens_Enrichment_Manager();
+		$client        = new PluginLens_WPVulnerability_Client( $manager );
+		$slug_versions = array();
+		foreach ( $records as $record ) {
+			if ( in_array( $record['status'], array( 'active', 'inactive' ), true ) ) {
+				$slug_versions[ $record['slug'] ] = $record['version'];
+			}
+		}
+		$vuln_map = $client->has_vulnerability_map( $slug_versions );
+
 		$records = array_values(
 			array_filter(
 				$records,
@@ -108,7 +121,8 @@ class PluginLens_Tool_List_Plugins {
 
 		$rows = array();
 		foreach ( $page as $record ) {
-			$rows[] = self::row( $record, $detail );
+			$has_vuln = isset( $vuln_map[ $record['slug'] ] ) ? $vuln_map[ $record['slug'] ] : null;
+			$rows[]   = self::row( $record, $detail, $has_vuln );
 		}
 
 		$payload = array(
@@ -122,7 +136,8 @@ class PluginLens_Tool_List_Plugins {
 			$payload,
 			$total,
 			count( $rows ),
-			( $offset + count( $rows ) ) < $total
+			( $offset + count( $rows ) ) < $total,
+			$manager->sources_unavailable()
 		);
 	}
 
@@ -151,11 +166,12 @@ class PluginLens_Tool_List_Plugins {
 	/**
 	 * Builds one response row.
 	 *
-	 * @param array $record Inventory record.
-	 * @param bool  $detail Whether to include expanded fields.
+	 * @param array     $record   Inventory record.
+	 * @param bool      $detail   Whether to include expanded fields.
+	 * @param bool|null $has_vuln Vulnerability presence, null when unknown.
 	 * @return array
 	 */
-	private static function row( $record, $detail ) {
+	private static function row( $record, $detail, $has_vuln = null ) {
 		$row = array(
 			'slug'             => $record['slug'],
 			'name'             => $record['name'],
@@ -163,7 +179,7 @@ class PluginLens_Tool_List_Plugins {
 			'status'           => $record['status'],
 			'update_available' => $record['update_available'],
 			'latest_version'   => $record['latest_version'],
-			'flags'            => self::flags( $record ),
+			'flags'            => self::flags( $record, $has_vuln ),
 		);
 
 		if ( $detail ) {
@@ -196,13 +212,18 @@ class PluginLens_Tool_List_Plugins {
 	}
 
 	/**
-	 * Offline-only health flags for a record.
+	 * Health flags for a record.
 	 *
-	 * @param array $record Inventory record.
+	 * @param array     $record   Inventory record.
+	 * @param bool|null $has_vuln Vulnerability presence, null when unknown.
 	 * @return string[]
 	 */
-	private static function flags( $record ) {
+	private static function flags( $record, $has_vuln = null ) {
 		$flags = array();
+
+		if ( true === $has_vuln ) {
+			$flags[] = 'has_vulnerability';
+		}
 
 		if ( $record['network_active'] ) {
 			$flags[] = 'network_active';
