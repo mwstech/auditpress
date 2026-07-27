@@ -22,6 +22,12 @@
 		<exclude name="WordPress.Files.FileName"/>
 	</rule>
 
+	<!-- The kickoff mandates the auth interface and its implementation
+	     together in class-security.php so the mechanism stays swappable. -->
+	<rule ref="Generic.Files.OneObjectStructurePerFile">
+		<exclude-pattern>*/includes/class-security\.php</exclude-pattern>
+	</rule>
+
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
