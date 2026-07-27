@@ -1,0 +1,26 @@
+name: Deploy to WordPress.org
+
+# Pushes tagged releases from Git to the wordpress.org SVN repository.
+# Inert until the plugin is approved: it requires the SVN repo to exist and
+# the SVN_USERNAME / SVN_PASSWORD repository secrets, which are added by the
+# plugin owner before the first release.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  deploy:
+    name: Deploy tag to SVN
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: WordPress plugin deploy
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: pluginlens
+          ASSETS_DIR: .wordpress-org
