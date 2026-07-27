@@ -44,6 +44,10 @@ class PluginLens_Plugin {
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/mcp/class-tool-registry.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/mcp/class-mcp-server.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-inventory.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-site-context.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/interface-enrichment-client.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-enrichment-manager.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-endoflife-client.php';
 
 		$server = new PluginLens_MCP_Server( new PluginLens_Token_Auth(), $this->build_registry() );
 		add_action( 'rest_api_init', array( $server, 'register_routes' ) );
