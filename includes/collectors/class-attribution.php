@@ -240,6 +240,20 @@ class PluginLens_Attribution {
 					break;
 				}
 			}
+			// A few core options embed the site's table prefix, which is only
+			// "wp_" on default installs ({prefix}user_roles on live sites with
+			// custom prefixes).
+			global $wpdb;
+			if ( isset( $wpdb->prefix ) && 0 === strpos( $name, $wpdb->prefix ) ) {
+				$unprefixed = substr( $name, strlen( $wpdb->prefix ) );
+				if ( in_array( $unprefixed, array( 'user_roles', 'dashboard_quick_press_last_post_id' ), true ) ) {
+					return array(
+						'slug'       => self::CORE_SLUG,
+						'confidence' => 'high',
+					);
+				}
+			}
+
 			if ( in_array( $name, self::CORE_OPTIONS, true ) ) {
 				return array(
 					'slug'       => self::CORE_SLUG,
