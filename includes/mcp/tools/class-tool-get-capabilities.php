@@ -47,7 +47,7 @@ class PluginLens_Tool_Get_Capabilities {
 			'description'      => 'A read-only MCP server for inspecting this WordPress site\'s plugin estate. It reports facts, never verdicts; analysis is the client\'s job.',
 			'available_now'    => array(
 				'get_capabilities'      => 'This orientation document.',
-				'list_plugins'          => 'Paginated inventory of every installed plugin, mu-plugin, and drop-in: slug, name, version, status, update availability, and offline health flags. detail=true adds author, truncated description, requirements, auto-update setting, disk size, and file count. No network data yet: wordpress.org health flags and vulnerability data arrive in later phases.',
+				'list_plugins'          => 'Paginated inventory of every installed plugin, mu-plugin, and drop-in: slug, name, version, status, update availability, and health flags including has_vulnerability. detail=true adds author, truncated description, requirements, auto-update setting, disk size, and file count. wordpress.org health flags (abandoned, closed) arrive in a later phase.',
 				'get_site_overview'     => 'The site environment: WordPress, PHP, and database versions each with end-of-life support facts (cycle, EOL date, whether passed), theme, multisite status, object cache, debug mode, memory limits, cron state, plugin counts, and published post count.',
 				'check_vulnerabilities' => 'Known published vulnerabilities matched against the plugin versions actually installed, plus WordPress core: CVE identifiers, CVSS score and severity as published, affected range, and fixed-in version. Version matches only, never slug matches.',
 			),
