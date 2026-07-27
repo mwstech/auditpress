@@ -50,7 +50,11 @@ class PluginLens_Tool_Get_Capabilities {
 				'list_plugins'          => 'Paginated inventory of every installed plugin, mu-plugin, and drop-in: slug, name, version, status, update availability, and health flags (see flag_definitions). detail=true adds author, truncated description, requirements, auto-update setting, disk footprint, and raw wordpress.org figures: last updated, tested-up-to, active installs, rating, rating count, support threads, resolved ratio.',
 				'get_site_overview'     => 'The site environment: WordPress, PHP, and database versions each with end-of-life support facts (cycle, EOL date, whether passed), theme, multisite status, object cache, debug mode, memory limits, cron state, plugin counts, and published post count.',
 				'check_vulnerabilities' => 'Known published vulnerabilities matched against the plugin versions actually installed, plus WordPress core: CVE identifiers, CVSS score and severity as published, affected range, and fixed-in version. Version matches only, never slug matches.',
+				'analyze_autoload'      => 'Autoloaded option weight per plugin with attribution confidence, the largest individual options, and an explicit unattributed bucket with its share of total bytes.',
+				'analyze_cron'          => 'Scheduled events grouped by owning plugin, WP-Cron state, and orphaned hooks with no registered callback (with the conditional-registration caveat stated).',
+				'analyze_database'      => 'Non-core tables with approximate row counts and sizes, attributed to plugins with confidence; orphaned tables listed separately. Tables outside the WordPress prefix are invisible.',
 			),
+			'attribution_note' => 'Attribution confidence: high = curated slug-to-prefix mapping; medium = prefix derived mechanically from the plugin slug; anything else is reported unattributed rather than guessed. Known limits: cron orphans can be false positives when a plugin registers callbacks conditionally, and database tables that do not use the WordPress table prefix are not visible.',
 			'tool_list_note'   => 'If a tool listed in available_now does not appear in your tool list, your tool list is stale; refresh it by reconnecting to this server.',
 			'flag_definitions' => array(
 				'has_vulnerability'   => 'At least one published vulnerability record whose affected version range includes the installed version.',
@@ -68,9 +72,6 @@ class PluginLens_Tool_Get_Capabilities {
 			),
 			'planned_tools'    => array(
 				'get_plugin_details' => 'Deep record for up to five named plugins: inventory, wordpress.org data, vulnerabilities, autoload, cron, tables, usage.',
-				'analyze_autoload'   => 'Autoloaded option weight attributed per plugin, with confidence levels.',
-				'analyze_cron'       => 'Scheduled events per plugin, plus orphaned hooks with no registered callback.',
-				'analyze_database'   => 'Non-core tables with sizes, attributed to plugins, plus orphaned tables.',
 				'analyze_usage'      => 'Shortcodes, blocks, and custom post types per plugin with real usage counts in content.',
 			),
 			'does_not_measure' => array(
