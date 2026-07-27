@@ -74,7 +74,7 @@ class PluginLens_Tool_Registry {
 		if ( null === $bytes ) {
 			return null;
 		}
-		$bytes = (float) $bytes;
+		$bytes     = (float) $bytes;
 		$units     = array( 'B', 'KB', 'MB', 'GB' );
 		$max_index = count( $units ) - 1;
 		$i         = 0;
