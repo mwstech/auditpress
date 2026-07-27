@@ -88,18 +88,34 @@ class PluginLens_Tool_List_Plugins {
 		$collector = new PluginLens_Inventory_Collector();
 		$records   = $collector->collect();
 
-		// Version-matched vulnerability presence, as a boolean flag only
-		// (docs/DECISIONS.md 18). When the source is unavailable the flag is
-		// simply absent and _meta.sources_unavailable says so.
+		// Network-derived flags (docs/DECISIONS.md 18): booleans in the flags
+		// array, never numbers. When a source is unavailable its flags are
+		// simply absent, _meta.sources_unavailable says so, and coverage
+		// names the slugs nobody looked at.
 		$manager       = new PluginLens_Enrichment_Manager();
-		$client        = new PluginLens_WPVulnerability_Client( $manager );
+		$vuln_client   = new PluginLens_WPVulnerability_Client( $manager );
+		$wporg_client  = new PluginLens_WPOrg_Client( $manager );
 		$slug_versions = array();
 		foreach ( $records as $record ) {
 			if ( in_array( $record['status'], array( 'active', 'inactive' ), true ) ) {
 				$slug_versions[ $record['slug'] ] = $record['version'];
 			}
 		}
-		$vuln_map = $client->has_vulnerability_map( $slug_versions );
+		$vuln_map  = $vuln_client->has_vulnerability_map( $slug_versions );
+		$wporg_map = $wporg_client->records( array_keys( $slug_versions ) );
+
+		// Release cycles place a tested-up-to value relative to the current
+		// WordPress release without pretending minor-version arithmetic works
+		// across majors (6.9 -> 7.0).
+		$eol_client  = new PluginLens_Endoflife_Client( $manager );
+		$cycle_index = null;
+		$cycles      = $eol_client->cycles( 'WordPress' );
+		if ( null !== $cycles ) {
+			$cycle_index = array();
+			foreach ( $cycles as $i => $cycle ) {
+				$cycle_index[ $cycle['cycle'] ] = $i;
+			}
+		}
 
 		$records = array_values(
 			array_filter(
@@ -122,7 +138,8 @@ class PluginLens_Tool_List_Plugins {
 		$rows = array();
 		foreach ( $page as $record ) {
 			$has_vuln = isset( $vuln_map[ $record['slug'] ] ) ? $vuln_map[ $record['slug'] ] : null;
-			$rows[]   = self::row( $record, $detail, $has_vuln );
+			$wporg    = isset( $wporg_map[ $record['slug'] ] ) ? $wporg_map[ $record['slug'] ] : null;
+			$rows[]   = self::row( $record, $detail, $has_vuln, $wporg, $cycle_index );
 		}
 
 		$payload = array(
@@ -131,6 +148,30 @@ class PluginLens_Tool_List_Plugins {
 			'limit'   => $limit,
 			'offset'  => $offset,
 		);
+
+		$coverage = array();
+		foreach ( array(
+			'wpvulnerability' => $vuln_map,
+			'wporg'           => $wporg_map,
+		) as $source => $map ) {
+			$unchecked = array();
+			foreach ( array_keys( $slug_versions ) as $slug ) {
+				if ( ! isset( $map[ $slug ] ) || null === $map[ $slug ] ) {
+					$unchecked[] = $slug;
+				}
+			}
+			if ( array() !== $unchecked ) {
+				$coverage[ $source ] = array(
+					'complete'        => false,
+					'plugins_checked' => count( $slug_versions ) - count( $unchecked ),
+					'plugins_total'   => count( $slug_versions ),
+					'unchecked_slugs' => $unchecked,
+				);
+			}
+		}
+		if ( array() !== $coverage ) {
+			$payload['coverage'] = $coverage;
+		}
 
 		return PluginLens_Tool_Registry::with_meta(
 			$payload,
@@ -166,12 +207,14 @@ class PluginLens_Tool_List_Plugins {
 	/**
 	 * Builds one response row.
 	 *
-	 * @param array     $record   Inventory record.
-	 * @param bool      $detail   Whether to include expanded fields.
-	 * @param bool|null $has_vuln Vulnerability presence, null when unknown.
+	 * @param array      $record      Inventory record.
+	 * @param bool       $detail      Whether to include expanded fields.
+	 * @param bool|null  $has_vuln    Vulnerability presence, null when unknown.
+	 * @param array|null $wporg       wordpress.org answer, null when unknown.
+	 * @param array|null $cycle_index WP release cycle => position map, null when unknown.
 	 * @return array
 	 */
-	private static function row( $record, $detail, $has_vuln = null ) {
+	private static function row( $record, $detail, $has_vuln = null, $wporg = null, $cycle_index = null ) {
 		$row = array(
 			'slug'             => $record['slug'],
 			'name'             => $record['name'],
@@ -179,7 +222,7 @@ class PluginLens_Tool_List_Plugins {
 			'status'           => $record['status'],
 			'update_available' => $record['update_available'],
 			'latest_version'   => $record['latest_version'],
-			'flags'            => self::flags( $record, $has_vuln ),
+			'flags'            => self::flags( $record, $has_vuln, $wporg, $cycle_index ),
 		);
 
 		if ( $detail ) {
@@ -198,6 +241,20 @@ class PluginLens_Tool_List_Plugins {
 			}
 			$row['disk_size']  = PluginLens_Tool_Registry::format_bytes( $record['disk_size'] );
 			$row['file_count'] = $record['file_count'];
+
+			// Raw wordpress.org figures live in detail mode only; compact
+			// rows carry flags, never numbers (docs/DECISIONS.md 18).
+			if ( null !== $wporg && ! empty( $wporg['found'] ) ) {
+				$row['wporg_last_updated'] = isset( $wporg['last_updated'] ) ? $wporg['last_updated'] : null;
+				$row['wporg_tested']       = isset( $wporg['tested'] ) ? $wporg['tested'] : null;
+				$row['active_installs']    = isset( $wporg['active_installs'] ) ? $wporg['active_installs'] : null;
+				$row['rating']             = isset( $wporg['rating'] ) ? $wporg['rating'] : null;
+				$row['num_ratings']        = isset( $wporg['num_ratings'] ) ? $wporg['num_ratings'] : null;
+				$row['support_threads']    = isset( $wporg['support_threads'] ) ? $wporg['support_threads'] : null;
+				if ( isset( $wporg['support_threads'], $wporg['support_threads_resolved'] ) && $wporg['support_threads'] > 0 ) {
+					$row['support_resolved_ratio'] = round( $wporg['support_threads_resolved'] / $wporg['support_threads'], 2 );
+				}
+			}
 		}
 
 		// Null, empty-string, and empty-array fields carry no information;
@@ -212,17 +269,39 @@ class PluginLens_Tool_List_Plugins {
 	}
 
 	/**
-	 * Health flags for a record.
+	 * Health flags for a record. Every network-derived flag is mechanically
+	 * defined; thresholds are documented in get_capabilities
+	 * (docs/DECISIONS.md 25).
 	 *
-	 * @param array     $record   Inventory record.
-	 * @param bool|null $has_vuln Vulnerability presence, null when unknown.
+	 * @param array      $record      Inventory record.
+	 * @param bool|null  $has_vuln    Vulnerability presence, null when unknown.
+	 * @param array|null $wporg       wordpress.org answer, null when unknown.
+	 * @param array|null $cycle_index WP release cycle => position map.
 	 * @return string[]
 	 */
-	private static function flags( $record, $has_vuln = null ) {
+	private static function flags( $record, $has_vuln = null, $wporg = null, $cycle_index = null ) {
 		$flags = array();
 
 		if ( true === $has_vuln ) {
 			$flags[] = 'has_vulnerability';
+		}
+
+		if ( null !== $wporg ) {
+			if ( empty( $wporg['found'] ) ) {
+				$flags[] = ! empty( $wporg['closed'] ) ? 'closed_on_wporg' : 'no_wporg_record';
+			} else {
+				if ( isset( $wporg['last_updated'] ) ) {
+					$age_days = ( time() - strtotime( $wporg['last_updated'] ) ) / DAY_IN_SECONDS;
+					if ( $age_days > 1460 ) {
+						$flags[] = 'not_updated_4y'; // Implies not_updated_2y; only the strongest is emitted.
+					} elseif ( $age_days > 730 ) {
+						$flags[] = 'not_updated_2y';
+					}
+				}
+				if ( null !== $cycle_index && isset( $wporg['tested'] ) && self::tested_cycles_behind( $wporg['tested'], $cycle_index ) >= 3 ) {
+					$flags[] = 'untested_current_wp';
+				}
+			}
 		}
 
 		if ( $record['network_active'] ) {
@@ -243,6 +322,26 @@ class PluginLens_Tool_List_Plugins {
 		}
 
 		return $flags;
+	}
+
+	/**
+	 * How many release cycles a tested-up-to value sits behind the newest
+	 * cycle. Uses the ordered endoflife.date list (index 0 = newest) so major
+	 * boundaries (6.9 -> 7.0) need no arithmetic. Unknown cycles count as
+	 * infinitely behind only if older than every known cycle; unmatchable
+	 * values return 0 so no flag is raised on bad data.
+	 *
+	 * @param string $tested      Tested-up-to value, e.g. "6.4.2".
+	 * @param array  $cycle_index Cycle => position map.
+	 * @return int
+	 */
+	private static function tested_cycles_behind( $tested, $cycle_index ) {
+		foreach ( $cycle_index as $cycle => $index ) {
+			if ( $tested === $cycle || 0 === strpos( $tested . '.', $cycle . '.' ) ) {
+				return $index;
+			}
+		}
+		return 0;
 	}
 
 	/**

@@ -103,6 +103,49 @@ class PluginLens_Endoflife_Client implements PluginLens_Enrichment_Client_Interf
 	}
 
 	/**
+	 * The full ordered cycle list for one product, newest first, from cache
+	 * or a single fetch. Used by list_plugins to place a tested-up-to value
+	 * relative to the current release.
+	 *
+	 * @param string $product Product name. Case-insensitive: endoflife.date
+	 *                        product slugs are lowercase (which a doc-comment
+	 *                        example cannot spell without tripping the
+	 *                        CapitalPDangit sniff), so it is lowercased here,
+	 *                        keeping cache keys aligned with support_statuses().
+	 * @return array[]|null Cycle rows, or null when unavailable.
+	 */
+	public function cycles( $product ) {
+		$product = strtolower( $product );
+		$cached  = $this->manager->cache_get( 'eol_' . $product );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		if ( $this->manager->is_blocked( self::HOST ) ) {
+			$this->manager->record_unavailable( $this->name() );
+			return null;
+		}
+
+		$bodies = $this->manager->fetch_multiple(
+			array(
+				'v1'     => 'https://endoflife.date/api/v1/products/' . rawurlencode( $product ) . '/',
+				'legacy' => 'https://endoflife.date/api/' . rawurlencode( $product ) . '.json',
+			)
+		);
+
+		$cycles = $this->parse_v1( $bodies['v1'] );
+		if ( null === $cycles ) {
+			$cycles = $this->parse_legacy( $bodies['legacy'] );
+		}
+		if ( null === $cycles ) {
+			$this->manager->record_unavailable( $this->name() );
+			return null;
+		}
+		$this->manager->cache_set( 'eol_' . $product, $cycles, self::CACHE_TTL );
+		return $cycles;
+	}
+
+	/**
 	 * Normalizes a v1 API payload to cycle rows.
 	 *
 	 * @param string|null $body Response body.
