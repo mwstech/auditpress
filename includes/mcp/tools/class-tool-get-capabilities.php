@@ -46,11 +46,12 @@ class PluginLens_Tool_Get_Capabilities {
 			'read_only'        => true,
 			'description'      => 'A read-only MCP server for inspecting this WordPress site\'s plugin estate. It reports facts, never verdicts; analysis is the client\'s job.',
 			'available_now'    => array(
-				'get_capabilities' => 'This orientation document.',
-				'list_plugins'     => 'Paginated inventory of every installed plugin, mu-plugin, and drop-in: slug, name, version, status, update availability, and offline health flags. detail=true adds author, truncated description, requirements, auto-update setting, disk size, and file count. No network data yet: wordpress.org health flags and vulnerability data arrive in later phases.',
+				'get_capabilities'  => 'This orientation document.',
+				'list_plugins'      => 'Paginated inventory of every installed plugin, mu-plugin, and drop-in: slug, name, version, status, update availability, and offline health flags. detail=true adds author, truncated description, requirements, auto-update setting, disk size, and file count. No network data yet: wordpress.org health flags and vulnerability data arrive in later phases.',
+				'get_site_overview' => 'The site environment: WordPress, PHP, and database versions each with end-of-life support facts (cycle, EOL date, whether passed), theme, multisite status, object cache, debug mode, memory limits, cron state, plugin counts, and published post count.',
 			),
+			'tool_list_note'   => 'If a tool listed in available_now does not appear in your tool list, your tool list is stale; refresh it by reconnecting to this server.',
 			'planned_tools'    => array(
-				'get_site_overview'     => 'WordPress, PHP, and database versions, active theme, multisite status, plugin counts, with end-of-life support status.',
 				'get_plugin_details'    => 'Deep record for up to five named plugins: inventory, wordpress.org data, vulnerabilities, autoload, cron, tables, usage.',
 				'check_vulnerabilities' => 'Known vulnerabilities matched against installed plugin versions.',
 				'analyze_autoload'      => 'Autoloaded option weight attributed per plugin, with confidence levels.',

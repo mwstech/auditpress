@@ -1,0 +1,75 @@
+<?php
+/**
+ * The get_site_overview tool.
+ *
+ * @package PluginLens
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Site environment enriched with end-of-life support facts. Facts only:
+ * versions, cycles, dates, and whether dates have passed. No severity labels,
+ * no advice — the client does the judgment.
+ */
+class PluginLens_Tool_Get_Site_Overview {
+
+	/**
+	 * Registers the tool.
+	 *
+	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @return void
+	 */
+	public static function register( $registry ) {
+		$registry->register(
+			'get_site_overview',
+			'Returns this WordPress site\'s environment: WordPress, PHP, and database versions with their end-of-life support status (cycle, EOL date, whether it has passed), active theme and parent, multisite status, object cache, debug mode, memory limits, cron state, plugin counts by status, and published post count.',
+			array(
+				'type'       => 'object',
+				'properties' => new stdClass(),
+			),
+			array( __CLASS__, 'run' )
+		);
+	}
+
+	/**
+	 * Runs the tool.
+	 *
+	 * @return string JSON string.
+	 */
+	public static function run() {
+		$collector = new PluginLens_Site_Context_Collector();
+		$context   = $collector->collect();
+
+		$manager = new PluginLens_Enrichment_Manager();
+		$eol     = new PluginLens_Endoflife_Client( $manager );
+
+		$statuses = $eol->support_statuses(
+			array(
+				'php'                          => $context['php_version'],
+				'wordpress'                    => $context['wordpress_version'],
+				$context['database']['flavor'] => $context['database']['version'],
+			)
+		);
+
+		$support = array();
+		foreach ( $statuses as $product => $status ) {
+			if ( null !== $status ) {
+				$support[ $product ] = $status;
+			}
+		}
+		if ( array() !== $support ) {
+			$context['support_status'] = $support;
+		}
+
+		return PluginLens_Tool_Registry::with_meta(
+			$context,
+			1,
+			1,
+			false,
+			$manager->sources_unavailable()
+		);
+	}
+}
