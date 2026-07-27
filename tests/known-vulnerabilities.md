@@ -1,9 +1,9 @@
-# Known-vulnerability answer key: outsourcewebdesign.com
+# Known-vulnerability answer key: the live test site
 
 Manual research performed 2026-07-27 against public advisory databases, while the
 WPVulnerability `/plugin/` route was down (HTTP 500 for every slug). This is the
-expected result set for `check_vulnerabilities` on the live site once the source
-recovers. If the tool's output disagrees with this document, one of the two is
+expected result set for `check_vulnerabilities` on the project's live test site
+once the source recovers. If the tool's output disagrees with this document, one of the two is
 wrong and the disagreement is a bug report with a ready-made test case either way.
 
 Installed versions as of the same date. Advisory databases move; treat entries as
@@ -60,7 +60,7 @@ on this site. Do not let a scanner or a client conflate the two.
 ## How to run the comparison
 
 ```
-php tests/mcp-client.php https://www.outsourcewebdesign.com/wp-json/pluginlens/v1/mcp/{token} \
+php tests/mcp-client.php https://{live-test-site}/wp-json/pluginlens/v1/mcp/{token} \
   --call check_vulnerabilities
 ```
 
