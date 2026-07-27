@@ -73,21 +73,30 @@ class PluginLens_Tool_Check_Vulnerabilities {
 
 		$result = $client->plugin_findings( $slug_versions );
 
+		// An empty findings array under partial coverage is a false negative
+		// waiting to be misread. Coverage is stated explicitly, with the
+		// unchecked slugs named so nobody has to infer which ones nobody
+		// looked at.
 		$payload = array(
-			'findings'        => $result['findings'],
-			'plugins_checked' => $result['checked'],
-			'plugins_total'   => count( $slug_versions ),
-			'unparsed'        => $result['unparsed'],
+			'findings' => $result['findings'],
+			'coverage' => array(
+				'complete'        => array() === $result['unchecked'],
+				'plugins_checked' => $result['checked'],
+				'plugins_total'   => count( $slug_versions ),
+				'unchecked_slugs' => $result['unchecked'],
+			),
+			'unparsed' => $result['unparsed'],
 		);
 
 		if ( $include_core ) {
-			$core = $client->core_findings( get_bloginfo( 'version' ) );
+			$core            = $client->core_findings( get_bloginfo( 'version' ) );
+			$payload['core'] = array(
+				'version' => get_bloginfo( 'version' ),
+				'checked' => null !== $core,
+			);
 			if ( null !== $core ) {
-				$payload['core']      = array(
-					'version'  => get_bloginfo( 'version' ),
-					'findings' => $core['findings'],
-				);
-				$payload['unparsed'] += $core['unparsed'];
+				$payload['core']['findings'] = $core['findings'];
+				$payload['unparsed']        += $core['unparsed'];
 			}
 		}
 
