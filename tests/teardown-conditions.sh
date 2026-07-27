@@ -44,11 +44,18 @@ while IFS='=' read -r key value; do
   fi
 done < "$STATE_FILE"
 
-# Remove the closed-plugin fixture.
+# Remove the closed-plugin fixture (also used for folder-based fixtures).
 while IFS='=' read -r key value; do
   [ "$key" = "closed_plugin" ] || continue
   rm -rf "${PLUGINS_DIR:?}/$value"
   echo "  removed fixture: $value"
+done < "$STATE_FILE"
+
+# Delete fixture posts.
+while IFS='=' read -r key value; do
+  [ "$key" = "post" ] || continue
+  $WP_CMD post delete "$value" --force >/dev/null 2>&1 || true
+  echo "  deleted fixture post: $value"
 done < "$STATE_FILE"
 
 # Unschedule the orphan cron hook.

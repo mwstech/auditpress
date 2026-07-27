@@ -53,7 +53,10 @@ class PluginLens_Tool_Get_Capabilities {
 				'analyze_autoload'      => 'Autoloaded option weight per plugin with attribution confidence, the largest individual options, and an explicit unattributed bucket with its share of total bytes.',
 				'analyze_cron'          => 'Scheduled events grouped by owning plugin, WP-Cron state, and orphaned hooks with no registered callback (with the conditional-registration caveat stated).',
 				'analyze_database'      => 'Non-core tables with approximate row counts and sizes, attributed to plugins with confidence; orphaned tables listed separately. Tables outside the WordPress prefix are invisible.',
+				'analyze_usage'         => 'Content features per plugin (shortcodes, blocks, post types, taxonomies) with occurrence counts in post content, and a zero_content_usage flag. Measures content usage only; see usage_note.',
+				'get_plugin_details'    => 'The complete record for up to five named plugins, composed from every source: inventory, wordpress.org, vulnerabilities, autoload weight, cron, tables, and content usage. The drill-down after list_plugins.',
 			),
+			'usage_note'       => 'zero_content_usage means exactly: the plugin registers shortcodes, blocks, or post types and none appear in post content. Plugins registering no content features are reported not_measurable, never unused — hooks, filters, admin screens, REST endpoints, and template code are invisible to content scanning. Counts scan post_content only; shortcodes in widgets, options, post meta, or theme templates count zero while possibly appearing on every page. Checks that do not run return null with a reason, never zero.',
 			'attribution_note' => 'Attribution confidence: high = curated slug-to-prefix mapping; medium = prefix derived mechanically from the plugin slug; anything else is reported unattributed rather than guessed. Known limits: cron orphans can be false positives when a plugin registers callbacks conditionally, and database tables that do not use the WordPress table prefix are not visible.',
 			'tool_list_note'   => 'If a tool listed in available_now does not appear in your tool list, your tool list is stale; refresh it by reconnecting to this server.',
 			'flag_definitions' => array(
@@ -71,8 +74,7 @@ class PluginLens_Tool_Get_Capabilities {
 				'dropin'              => 'A drop-in (e.g. object-cache.php) occupying a WordPress override slot.',
 			),
 			'planned_tools'    => array(
-				'get_plugin_details' => 'Deep record for up to five named plugins: inventory, wordpress.org data, vulnerabilities, autoload, cron, tables, usage.',
-				'analyze_usage'      => 'Shortcodes, blocks, and custom post types per plugin with real usage counts in content.',
+				'note' => 'None. The v1 tool set is complete.',
 			),
 			'does_not_measure' => array(
 				'per_plugin_runtime_cost' => 'Per-plugin execution time cannot be measured without a profiler and is never reported.',

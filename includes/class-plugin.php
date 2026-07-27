@@ -49,6 +49,10 @@ class PluginLens_Plugin {
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-autoload.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-cron.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-database.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-usage.php';
+
+		// Capture CPT/taxonomy registration files; no-op off PluginLens requests.
+		PluginLens_Usage_Collector::listen();
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/interface-enrichment-client.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-enrichment-manager.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-endoflife-client.php';

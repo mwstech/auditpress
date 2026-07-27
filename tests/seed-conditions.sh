@@ -172,6 +172,54 @@ PHP
 fi
 echo "  [8] single-file plugin fixture: legacy-maintenance-notice.php (inactive)"
 
+# ---- Condition 9: content-usage fixtures ----
+# One active plugin whose shortcode IS used in content, and one active plugin
+# whose shortcode (registered as a class method) and CPT appear nowhere - the
+# deliberate zero_content_usage case.
+if [ ! -f "$PLUGINS_DIR/usage-fixture-used.php" ]; then
+  cat > "$PLUGINS_DIR/usage-fixture-used.php" <<'PHP'
+<?php
+/**
+ * Plugin Name: Usage Fixture (used)
+ * Description: Test fixture: registers a shortcode that appears in content.
+ * Version: 1.0
+ */
+add_shortcode( 'uf_notice', 'usage_fixture_used_notice' );
+function usage_fixture_used_notice() {
+	return '<em>notice</em>';
+}
+PHP
+  echo "single_file=usage-fixture-used.php" >> "$STATE_FILE"
+  $WP_CMD plugin activate usage-fixture-used >/dev/null && echo "activated=usage-fixture-used" >> "$STATE_FILE"
+fi
+if [ ! -d "$PLUGINS_DIR/usage-fixture-unused" ]; then
+  mkdir -p "$PLUGINS_DIR/usage-fixture-unused"
+  cat > "$PLUGINS_DIR/usage-fixture-unused/usage-fixture-unused.php" <<'PHP'
+<?php
+/**
+ * Plugin Name: Usage Fixture (unused)
+ * Description: Test fixture: registers a class-method shortcode and a CPT that appear nowhere in content.
+ * Version: 1.0
+ */
+class Usage_Fixture_Unused {
+	public function banner() {
+		return '<em>banner</em>';
+	}
+}
+add_shortcode( 'uf_promo_banner', array( new Usage_Fixture_Unused(), 'banner' ) );
+add_action( 'init', function () {
+	register_post_type( 'uf_case_study', array( 'label' => 'Fixture Case Studies', 'public' => false ) );
+} );
+PHP
+  echo "closed_plugin=usage-fixture-unused" >> "$STATE_FILE"
+  $WP_CMD plugin activate usage-fixture-unused >/dev/null && echo "activated=usage-fixture-unused" >> "$STATE_FILE"
+fi
+if ! $WP_CMD post list --title="Usage fixture post" --field=ID 2>/dev/null | grep -q .; then
+  UF_POST_ID=$($WP_CMD post create --post_title="Usage fixture post" --post_status=publish --post_content="Fixture content with [uf_notice] inside." --porcelain)
+  echo "post=$UF_POST_ID" >> "$STATE_FILE"
+fi
+echo "  [9] usage fixtures: uf_notice used once, uf_promo_banner + uf_case_study unused"
+
 # ---- Verification summary ----
 echo
 echo "Verification:"
