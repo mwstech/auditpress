@@ -45,6 +45,10 @@ class PluginLens_Plugin {
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/mcp/class-mcp-server.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-inventory.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-site-context.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-attribution.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-autoload.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-cron.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-database.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/interface-enrichment-client.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-enrichment-manager.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-endoflife-client.php';
