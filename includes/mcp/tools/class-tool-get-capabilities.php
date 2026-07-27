@@ -45,9 +45,12 @@ class PluginLens_Tool_Get_Capabilities {
 			'version'          => PLUGINLENS_VERSION,
 			'read_only'        => true,
 			'description'      => 'A read-only MCP server for inspecting this WordPress site\'s plugin estate. It reports facts, never verdicts; analysis is the client\'s job.',
+			'available_now'    => array(
+				'get_capabilities' => 'This orientation document.',
+				'list_plugins'     => 'Paginated inventory of every installed plugin, mu-plugin, and drop-in: slug, name, version, status, update availability, and offline health flags. detail=true adds author, truncated description, requirements, auto-update setting, disk size, and file count. No network data yet: wordpress.org health flags and vulnerability data arrive in later phases.',
+			),
 			'planned_tools'    => array(
 				'get_site_overview'     => 'WordPress, PHP, and database versions, active theme, multisite status, plugin counts, with end-of-life support status.',
-				'list_plugins'          => 'Inventory of all plugins with status, versions, updates, and health flags such as abandoned or closed on wordpress.org.',
 				'get_plugin_details'    => 'Deep record for up to five named plugins: inventory, wordpress.org data, vulnerabilities, autoload, cron, tables, usage.',
 				'check_vulnerabilities' => 'Known vulnerabilities matched against installed plugin versions.',
 				'analyze_autoload'      => 'Autoloaded option weight attributed per plugin, with confidence levels.',
@@ -55,7 +58,6 @@ class PluginLens_Tool_Get_Capabilities {
 				'analyze_database'      => 'Non-core tables with sizes, attributed to plugins, plus orphaned tables.',
 				'analyze_usage'         => 'Shortcodes, blocks, and custom post types per plugin with real usage counts in content.',
 			),
-			'available_now'    => array( 'get_capabilities' ),
 			'does_not_measure' => array(
 				'per_plugin_runtime_cost' => 'Per-plugin execution time cannot be measured without a profiler and is never reported.',
 				'front_end_asset_weight'  => 'Front-end asset attribution is not measured.',
@@ -63,6 +65,6 @@ class PluginLens_Tool_Get_Capabilities {
 			),
 		);
 
-		return wp_json_encode( $capabilities );
+		return PluginLens_Tool_Registry::with_meta( $capabilities, 1, 1, false );
 	}
 }

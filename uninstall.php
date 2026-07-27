@@ -11,3 +11,4 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 delete_option( 'pluginlens_enabled' );
 delete_option( 'pluginlens_token' );
+delete_transient( 'pluginlens_disk_footprint' );

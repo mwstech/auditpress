@@ -43,7 +43,7 @@ class PluginLens_Plugin {
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/class-security.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/mcp/class-tool-registry.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/mcp/class-mcp-server.php';
-		require_once PLUGINLENS_PLUGIN_DIR . 'includes/mcp/tools/class-tool-get-capabilities.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/collectors/class-inventory.php';
 
 		$server = new PluginLens_MCP_Server( new PluginLens_Token_Auth(), $this->build_registry() );
 		add_action( 'rest_api_init', array( $server, 'register_routes' ) );
@@ -63,7 +63,7 @@ class PluginLens_Plugin {
 	 */
 	private function build_registry() {
 		$registry = new PluginLens_Tool_Registry();
-		PluginLens_Tool_Get_Capabilities::register( $registry );
+		$registry->load_tools_from( PLUGINLENS_PLUGIN_DIR . 'includes/mcp/tools' );
 		return $registry;
 	}
 }
