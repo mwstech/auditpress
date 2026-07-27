@@ -11,6 +11,11 @@
  * Text Domain: pluginlens
  * Requires at least: 6.0
  * Requires PHP: 7.4
+ * Network: false
+ *
+ * Multisite note: v1 operates on the individual site it runs on and is not
+ * network-tested. On multisite, managing PluginLens requires a network admin
+ * (manage_network_options). See docs/DECISIONS.md 35.
  *
  * @package PluginLens
  */
