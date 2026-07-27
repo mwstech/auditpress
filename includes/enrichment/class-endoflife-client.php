@@ -107,9 +107,11 @@ class PluginLens_Endoflife_Client implements PluginLens_Enrichment_Client_Interf
 	 * or a single fetch. Used by list_plugins to place a tested-up-to value
 	 * relative to the current release.
 	 *
-	 * @param string $product Product name, e.g. 'wordpress'. Case-insensitive;
-	 *                        endoflife.date product slugs are lowercase and the
-	 *                        cache key must match support_statuses().
+	 * @param string $product Product name. Case-insensitive: endoflife.date
+	 *                        product slugs are lowercase (which a doc-comment
+	 *                        example cannot spell without tripping the
+	 *                        CapitalPDangit sniff), so it is lowercased here,
+	 *                        keeping cache keys aligned with support_statuses().
 	 * @return array[]|null Cycle rows, or null when unavailable.
 	 */
 	public function cycles( $product ) {
