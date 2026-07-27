@@ -116,6 +116,24 @@ class PluginLens_Enrichment_Manager {
 	 * @return array<string, ?string> Map of key => body or null.
 	 */
 	public function fetch_multiple( $urls ) {
+		$bodies = array();
+		foreach ( $this->fetch_multiple_raw( $urls ) as $key => $response ) {
+			$ok             = null !== $response && $response['status'] >= 200 && $response['status'] < 300 && '' !== $response['body'];
+			$bodies[ $key ] = $ok ? $response['body'] : null;
+		}
+		return $bodies;
+	}
+
+	/**
+	 * Like fetch_multiple, but preserves the HTTP status so callers can treat
+	 * meaningful non-2xx answers (wordpress.org replies 404 for both closed
+	 * and unknown plugins) as answers rather than failures. Null means the
+	 * request itself failed at the transport level.
+	 *
+	 * @param array<string, string> $urls Map of key => URL.
+	 * @return array<string, ?array{status: int, body: string}>
+	 */
+	public function fetch_multiple_raw( $urls ) {
 		$bodies = array_fill_keys( array_keys( $urls ), null );
 		if ( array() === $urls ) {
 			return $bodies;
@@ -155,9 +173,10 @@ class PluginLens_Enrichment_Manager {
 				if ( ! is_object( $response ) || ! isset( $response->status_code, $response->body ) ) {
 					continue; // Exceptions come back as objects without a status.
 				}
-				if ( $response->status_code >= 200 && $response->status_code < 300 && '' !== (string) $response->body ) {
-					$bodies[ $key ] = (string) $response->body;
-				}
+				$bodies[ $key ] = array(
+					'status' => (int) $response->status_code,
+					'body'   => (string) $response->body,
+				);
 			}
 		}
 
