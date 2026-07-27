@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<ruleset name="PluginLens">
+	<description>PluginLens coding standards: WordPress-Extra.</description>
+
+	<file>pluginlens.php</file>
+	<file>uninstall.php</file>
+	<file>includes</file>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+
+	<arg value="sp"/>
+	<arg name="colors"/>
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="8"/>
+
+	<config name="minimum_wp_version" value="6.0"/>
+
+	<rule ref="WordPress-Extra">
+		<!-- The spec fixes file names (class-plugin.php, class-security.php) that
+		     do not match the class-name-derived convention. -->
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+
+	<!-- The kickoff mandates the auth interface and its implementation
+	     together in class-security.php so the mechanism stays swappable. -->
+	<rule ref="Generic.Files.OneObjectStructurePerFile">
+		<exclude-pattern>*/includes/class-security\.php</exclude-pattern>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="pluginlens"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="pluginlens"/>
+				<element value="PluginLens"/>
+				<element value="PLUGINLENS"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

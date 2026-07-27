@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  lint:
+    name: PHP lint (${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.2', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Lint all PHP files
+        run: |
+          set -e
+          find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0 \
+            | xargs -0 -n1 -P4 php -l
+
+  phpcs:
+    name: PHPCS (WordPress-Extra)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer
+
+      - name: Install dev dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs
+
+  forbidden-writes:
+    name: Read-only guarantee
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Rule 3 of the project: the plugin must be structurally incapable of
+      # writing to WordPress state. Fails the build if any forbidden write
+      # function or SQL keyword appears in includes/ or the plugin entry files.
+      - name: Grep for forbidden write operations
+        run: |
+          set +e
+          FAIL=0
+
+          echo "Checking for forbidden WordPress write functions..."
+          grep -rEn 'activate_plugin|deactivate_plugins|delete_plugins|[A-Za-z_]+_Upgrader' includes/ pluginlens.php uninstall.php
+          if [ $? -eq 0 ]; then FAIL=1; fi
+
+          echo "Checking for forbidden SQL keywords (uppercase, as SQL is written)..."
+          grep -rn --include='*.php' -E '\b(INSERT|UPDATE|DELETE|DROP|ALTER)\b' includes/ pluginlens.php
+          if [ $? -eq 0 ]; then FAIL=1; fi
+
+          if [ "$FAIL" -eq 1 ]; then
+            echo "::error::Forbidden write operation found. This plugin is read-only by design (docs/DECISIONS.md #1)."
+            exit 1
+          fi
+          echo "Clean: no write operations found."

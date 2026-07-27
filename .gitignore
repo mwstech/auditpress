@@ -1,0 +1,9 @@
+/vendor/
+/node_modules/
+composer.lock
+.DS_Store
+Thumbs.db
+*.log
+.phpcs-cache
+.claude/
+tests/.seed-state
