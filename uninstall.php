@@ -11,6 +11,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 delete_option( 'pluginlens_enabled' );
 delete_option( 'pluginlens_token' );
+delete_option( 'pluginlens_enrich_store' );
 delete_transient( 'pluginlens_disk_footprint' );
 delete_transient( 'pluginlens_enrich_eol_php' );
 delete_transient( 'pluginlens_enrich_eol_wordpress' );
