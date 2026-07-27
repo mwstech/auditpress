@@ -70,30 +70,34 @@ class PluginLens_Usage_Collector {
 	 * @return string
 	 */
 	private static function calling_file() {
-		$core_paths = array(
-			wp_normalize_path( ABSPATH . WPINC ),
-			wp_normalize_path( ABSPATH . 'wp-admin' ),
-			wp_normalize_path( ABSPATH . 'wp-settings.php' ),
-			wp_normalize_path( PLUGINLENS_PLUGIN_DIR ),
-		);
-		$trace      = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 12 ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Attribution capture on PluginLens requests only, gated in listen().
+		$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 12 ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Attribution capture on PluginLens requests only, gated in listen().
 		foreach ( $trace as $frame ) {
 			if ( ! isset( $frame['file'] ) ) {
 				continue;
 			}
-			$file     = wp_normalize_path( $frame['file'] );
-			$excluded = false;
-			foreach ( $core_paths as $path ) {
-				if ( 0 === strpos( $file, $path ) ) {
-					$excluded = true;
-					break;
-				}
-			}
-			if ( ! $excluded ) {
+			$file = wp_normalize_path( $frame['file'] );
+			if ( ! self::is_core_file( $file ) && 0 !== strpos( $file, wp_normalize_path( PLUGINLENS_PLUGIN_DIR ) ) ) {
 				return $file;
 			}
 		}
 		return '';
+	}
+
+	/**
+	 * Whether a file belongs to WordPress core: wp-includes, wp-admin, or the
+	 * bootstrap files sitting directly in the WordPress root (index.php,
+	 * wp-settings.php, ...), which is where deep backtraces bottom out.
+	 *
+	 * @param string $file Normalized absolute path.
+	 * @return bool
+	 */
+	private static function is_core_file( $file ) {
+		$file = wp_normalize_path( $file );
+		$root = wp_normalize_path( ABSPATH );
+		if ( 0 === strpos( $file, wp_normalize_path( ABSPATH . WPINC ) ) || 0 === strpos( $file, wp_normalize_path( ABSPATH . 'wp-admin' ) ) ) {
+			return true;
+		}
+		return trailingslashit( wp_normalize_path( dirname( $file ) ) ) === $root;
 	}
 
 	/**
@@ -111,10 +115,16 @@ class PluginLens_Usage_Collector {
 		);
 
 		// Shortcodes: reflection on the callback gives the declaring file,
-		// which is accurate attribution — unlike prefix matching.
+		// which is accurate attribution — unlike prefix matching. Core's own
+		// shortcodes (gallery, caption, ...) are core features, not plugin
+		// features, and are skipped entirely.
 		global $shortcode_tags;
 		foreach ( (array) $shortcode_tags as $tag => $callback ) {
-			$slug = $this->slug_from_file( $this->callback_file( $callback ) );
+			$file = $this->callback_file( $callback );
+			if ( '' !== $file && $this->is_core_file( $file ) ) {
+				continue;
+			}
+			$slug = $this->slug_from_file( $file );
 			if ( null === $slug ) {
 				$unattributed['shortcodes'][] = (string) $tag;
 				continue;
@@ -340,12 +350,22 @@ class PluginLens_Usage_Collector {
 		if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
+		$slugs      = array();
 		$normalized = str_replace( '_', '-', strtolower( $block_namespace ) );
 		foreach ( array_keys( get_plugins() ) as $plugin_file ) {
-			$slug = '.' === dirname( $plugin_file ) ? basename( $plugin_file, '.php' ) : dirname( $plugin_file );
+			$slug    = '.' === dirname( $plugin_file ) ? basename( $plugin_file, '.php' ) : dirname( $plugin_file );
+			$slugs[] = $slug;
 			if ( strtolower( $slug ) === $normalized ) {
 				return $slug;
 			}
+		}
+
+		// Second chance through the curated prefix map: the aioseo namespace
+		// belongs to all-in-one-seo-pack, which no slug comparison derives.
+		$attribution = new PluginLens_Attribution( $slugs );
+		$owner       = $attribution->attribute( str_replace( '-', '_', strtolower( $block_namespace ) ) . '_', 'namespace' );
+		if ( null !== $owner && 'high' === $owner['confidence'] && $attribution->is_installed( $owner['slug'] ) ) {
+			return $owner['slug'];
 		}
 		return null;
 	}
