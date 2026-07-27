@@ -1,0 +1,181 @@
+# Copyright (C) 2026 Macronimous Web Solutions
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: PluginLens 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pluginlens\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-07-27T14:37:14+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: pluginlens\n"
+
+#. Plugin Name of the plugin
+#: pluginlens.php
+#: includes/class-settings.php:46
+#: includes/class-settings.php:47
+#: includes/class-settings.php:124
+msgid "PluginLens"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: pluginlens.php
+msgid "https://www.macronimous.com/free-tools/pluginlens/"
+msgstr ""
+
+#. Description of the plugin
+#: pluginlens.php
+msgid "Turns this site into a read-only MCP server so AI clients can inspect and reason about its plugin estate."
+msgstr ""
+
+#. Author of the plugin
+#: pluginlens.php
+msgid "Macronimous Web Solutions"
+msgstr ""
+
+#. Author URI of the plugin
+#: pluginlens.php
+msgid "https://www.macronimous.com/"
+msgstr ""
+
+#: includes/class-settings.php:61
+#: includes/class-settings.php:78
+#: includes/class-settings.php:113
+msgid "You are not allowed to manage PluginLens."
+msgstr ""
+
+#: includes/class-settings.php:127
+msgid "Settings saved."
+msgstr ""
+
+#: includes/class-settings.php:129
+msgid "A new token was generated. Any previous token stopped working immediately."
+msgstr ""
+
+#: includes/class-settings.php:132
+msgid "PluginLens exposes a read-only MCP endpoint so AI clients can inspect this site's plugin estate. The endpoint is off by default and requires a secret token."
+msgstr ""
+
+#: includes/class-settings.php:139
+msgid "MCP endpoint"
+msgstr ""
+
+#: includes/class-settings.php:143
+msgid "Enable the MCP endpoint"
+msgstr ""
+
+#: includes/class-settings.php:145
+msgid "Enabling exposes read-only information about this site to anyone holding the token: the plugin list with versions and health data, WordPress/PHP/database versions, known vulnerabilities matched to installed versions, autoloaded option weight, cron schedules, database table names and sizes, and shortcode/block usage counts. No post content, user data, or credentials are ever exposed, and nothing can be changed through the endpoint. While disabled, the endpoint answers 404 to everything."
+msgstr ""
+
+#: includes/class-settings.php:149
+msgid "Save Changes"
+msgstr ""
+
+#: includes/class-settings.php:154
+msgid "Access token"
+msgstr ""
+
+#: includes/class-settings.php:160
+msgid "A token exists. Revoking and regenerating invalidates the old token immediately: every existing connection (including any Claude or other MCP connector using the old URL) will stop working until it is updated with the new URL."
+msgstr ""
+
+#: includes/class-settings.php:161
+msgid "Revoke and regenerate"
+msgstr ""
+
+#: includes/class-settings.php:163
+msgid "No token exists yet. Generate one to build the connection URL."
+msgstr ""
+
+#: includes/class-settings.php:164
+msgid "Generate token"
+msgstr ""
+
+#: includes/class-settings.php:169
+msgid "Connection URL"
+msgstr ""
+
+#: includes/class-settings.php:170
+msgid "Add this URL to your MCP client (for example, Claude custom connectors). Treat it like a password."
+msgstr ""
+
+#: includes/class-settings.php:176
+msgid "Copy URL"
+msgstr ""
+
+#: includes/class-settings.php:177
+msgid "Copied."
+msgstr ""
+
+#: includes/class-settings.php:195
+msgid "A token exists but the endpoint is disabled, so no connection URL is shown. Enable the endpoint above."
+msgstr ""
+
+#: includes/class-settings.php:200
+msgid "External services"
+msgstr ""
+
+#: includes/class-settings.php:201
+msgid "To enrich its answers, PluginLens contacts three public services. The only data ever sent is plugin slugs and version strings. No site content, no URLs beyond the API hosts, and no personal data leave this site."
+msgstr ""
+
+#: includes/class-settings.php:205
+msgid "Service"
+msgstr ""
+
+#: includes/class-settings.php:206
+msgid "What is sent"
+msgstr ""
+
+#: includes/class-settings.php:207
+msgid "What it answers"
+msgstr ""
+
+#: includes/class-settings.php:213
+msgid "Plugin slugs"
+msgstr ""
+
+#: includes/class-settings.php:214
+msgid "Last updated, tested-up-to, installs, ratings, support activity"
+msgstr ""
+
+#: includes/class-settings.php:218
+msgid "Plugin slugs and the WordPress version"
+msgstr ""
+
+#: includes/class-settings.php:219
+msgid "Published vulnerability records"
+msgstr ""
+
+#: includes/class-settings.php:223
+msgid "Product names only (php, WordPress, mysql, mariadb)"
+msgstr ""
+
+#: includes/class-settings.php:224
+msgid "Support and end-of-life dates"
+msgstr ""
+
+#: includes/class-settings.php:232
+msgid "Failed authentication attempts"
+msgstr ""
+
+#: includes/class-settings.php:233
+msgid "The most recent failed attempts against the endpoint (up to 50, newest first). No token material is ever recorded. The log clears when the token is regenerated."
+msgstr ""
+
+#: includes/class-settings.php:237
+msgid "Time (UTC)"
+msgstr ""
+
+#: includes/class-settings.php:238
+msgid "IP address"
+msgstr ""
+
+#: includes/class-settings.php:239
+msgid "User agent"
+msgstr ""
