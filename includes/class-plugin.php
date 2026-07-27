@@ -49,6 +49,7 @@ class PluginLens_Plugin {
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-enrichment-manager.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-endoflife-client.php';
 		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-wpvulnerability-client.php';
+		require_once PLUGINLENS_PLUGIN_DIR . 'includes/enrichment/class-wporg-client.php';
 
 		$server = new PluginLens_MCP_Server( new PluginLens_Token_Auth(), $this->build_registry() );
 		add_action( 'rest_api_init', array( $server, 'register_routes' ) );
