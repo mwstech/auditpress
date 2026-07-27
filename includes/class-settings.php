@@ -142,7 +142,7 @@ class PluginLens_Settings {
 								<input name="pluginlens_enabled" type="checkbox" id="pluginlens_enabled" value="1" <?php checked( $enabled ); ?> />
 								<?php esc_html_e( 'Enable the MCP endpoint', 'pluginlens' ); ?>
 							</label>
-							<p class="description"><?php esc_html_e( 'While disabled, the endpoint answers 404 to everything.', 'pluginlens' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Enabling exposes read-only information about this site to anyone holding the token: the plugin list with versions and health data, WordPress/PHP/database versions, known vulnerabilities matched to installed versions, autoloaded option weight, cron schedules, database table names and sizes, and shortcode/block usage counts. No post content, user data, or credentials are ever exposed, and nothing can be changed through the endpoint. While disabled, the endpoint answers 404 to everything.', 'pluginlens' ); ?></p>
 						</td>
 					</tr>
 				</table>
@@ -157,7 +157,7 @@ class PluginLens_Settings {
 				<input type="hidden" name="action" value="pluginlens_regenerate_token" />
 				<?php wp_nonce_field( 'pluginlens_regenerate_token' ); ?>
 				<?php if ( $has_token ) : ?>
-					<p><?php esc_html_e( 'A token exists. Regenerating invalidates it immediately.', 'pluginlens' ); ?></p>
+					<p><?php esc_html_e( 'A token exists. Revoking and regenerating invalidates the old token immediately: every existing connection (including any Claude or other MCP connector using the old URL) will stop working until it is updated with the new URL.', 'pluginlens' ); ?></p>
 					<?php submit_button( __( 'Revoke and regenerate', 'pluginlens' ), 'secondary', 'submit', false ); ?>
 				<?php else : ?>
 					<p><?php esc_html_e( 'No token exists yet. Generate one to build the connection URL.', 'pluginlens' ); ?></p>
@@ -193,6 +193,62 @@ class PluginLens_Settings {
 				</script>
 			<?php elseif ( $has_token ) : ?>
 				<p><?php esc_html_e( 'A token exists but the endpoint is disabled, so no connection URL is shown. Enable the endpoint above.', 'pluginlens' ); ?></p>
+			<?php endif; ?>
+
+			<hr />
+
+			<h2><?php esc_html_e( 'External services', 'pluginlens' ); ?></h2>
+			<p><?php esc_html_e( 'To enrich its answers, PluginLens contacts three public services. The only data ever sent is plugin slugs and version strings. No site content, no URLs beyond the API hosts, and no personal data leave this site.', 'pluginlens' ); ?></p>
+			<table class="widefat striped" style="max-width:700px;">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Service', 'pluginlens' ); ?></th>
+						<th><?php esc_html_e( 'What is sent', 'pluginlens' ); ?></th>
+						<th><?php esc_html_e( 'What it answers', 'pluginlens' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>api.wordpress.org</td>
+						<td><?php esc_html_e( 'Plugin slugs', 'pluginlens' ); ?></td>
+						<td><?php esc_html_e( 'Last updated, tested-up-to, installs, ratings, support activity', 'pluginlens' ); ?></td>
+					</tr>
+					<tr>
+						<td>wpvulnerability.net</td>
+						<td><?php esc_html_e( 'Plugin slugs and the WordPress version', 'pluginlens' ); ?></td>
+						<td><?php esc_html_e( 'Published vulnerability records', 'pluginlens' ); ?></td>
+					</tr>
+					<tr>
+						<td>endoflife.date</td>
+						<td><?php esc_html_e( 'Product names only (php, WordPress, mysql, mariadb)', 'pluginlens' ); ?></td>
+						<td><?php esc_html_e( 'Support and end-of-life dates', 'pluginlens' ); ?></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<?php $auth_log = PluginLens_Request_Guard::auth_log(); ?>
+			<?php if ( array() !== $auth_log ) : ?>
+				<hr />
+				<h2><?php esc_html_e( 'Failed authentication attempts', 'pluginlens' ); ?></h2>
+				<p><?php esc_html_e( 'The most recent failed attempts against the endpoint (up to 50, newest first). No token material is ever recorded. The log clears when the token is regenerated.', 'pluginlens' ); ?></p>
+				<table class="widefat striped" style="max-width:700px;">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Time (UTC)', 'pluginlens' ); ?></th>
+							<th><?php esc_html_e( 'IP address', 'pluginlens' ); ?></th>
+							<th><?php esc_html_e( 'User agent', 'pluginlens' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $auth_log as $attempt ) : ?>
+							<tr>
+								<td><?php echo esc_html( isset( $attempt['time'] ) ? $attempt['time'] : '' ); ?></td>
+								<td><?php echo esc_html( isset( $attempt['ip'] ) ? $attempt['ip'] : '' ); ?></td>
+								<td><?php echo esc_html( isset( $attempt['user_agent'] ) ? $attempt['user_agent'] : '' ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
 			<?php endif; ?>
 		</div>
 		<?php
