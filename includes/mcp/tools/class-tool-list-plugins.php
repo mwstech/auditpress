@@ -18,6 +18,11 @@ class PluginLens_Tool_List_Plugins {
 	const DEFAULT_LIMIT = 25;
 	const MAX_LIMIT     = 100;
 
+	// Detail mode is for looking closely at a handful of plugins, not for
+	// dumping the estate; its lower cap is what keeps Phase 3 enrichment
+	// inside the 20 KB budget (docs/DECISIONS.md 17).
+	const MAX_DETAIL_LIMIT = 10;
+
 	/**
 	 * Registers the tool.
 	 *
@@ -27,7 +32,7 @@ class PluginLens_Tool_List_Plugins {
 	public static function register( $registry ) {
 		$registry->register(
 			'list_plugins',
-			'Returns the installed plugin inventory of this WordPress site: for each plugin its slug, name, version, active/inactive/mu/dropin status, whether an update is available, and offline health flags such as single_file or requires_newer_php. Paginated (default 25, max 100 rows). Pass detail=true for author, description, requirements, auto-update setting, and disk footprint per plugin.',
+			'Returns the installed plugin inventory of this WordPress site: for each plugin its slug, name, version, active/inactive/mu/dropin status, whether an update is available, and offline health flags such as single_file or requires_newer_php. Paginated (default 25, max 100 rows). Pass detail=true for author, description, requirements, auto-update setting, and disk footprint per plugin; detail mode is for close inspection and caps at 10 rows per page.',
 			array(
 				'type'       => 'object',
 				'properties' => array(
@@ -46,7 +51,7 @@ class PluginLens_Tool_List_Plugins {
 						'default'     => self::DEFAULT_LIMIT,
 						'minimum'     => 1,
 						'maximum'     => self::MAX_LIMIT,
-						'description' => 'Rows per page, capped server-side at 100.',
+						'description' => 'Rows per page, capped server-side: 100 for compact rows, 10 when detail=true.',
 					),
 					'offset'     => array(
 						'type'        => 'integer',
@@ -74,10 +79,11 @@ class PluginLens_Tool_List_Plugins {
 	public static function run( $args ) {
 		$status     = isset( $args['status'] ) ? (string) $args['status'] : 'all';
 		$has_update = isset( $args['has_update'] ) ? (bool) $args['has_update'] : null;
-		$limit      = isset( $args['limit'] ) ? (int) $args['limit'] : self::DEFAULT_LIMIT;
-		$limit      = max( 1, min( self::MAX_LIMIT, $limit ) );
-		$offset     = isset( $args['offset'] ) ? max( 0, (int) $args['offset'] ) : 0;
 		$detail     = ! empty( $args['detail'] );
+		$max_limit  = $detail ? self::MAX_DETAIL_LIMIT : self::MAX_LIMIT;
+		$limit      = isset( $args['limit'] ) ? (int) $args['limit'] : min( self::DEFAULT_LIMIT, $max_limit );
+		$limit      = max( 1, min( $max_limit, $limit ) );
+		$offset     = isset( $args['offset'] ) ? max( 0, (int) $args['offset'] ) : 0;
 
 		$collector = new PluginLens_Inventory_Collector();
 		$records   = $collector->collect();
