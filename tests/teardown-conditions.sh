@@ -65,8 +65,32 @@ while IFS='=' read -r key value; do
   echo "  dropped table: $value"
 done < "$STATE_FILE"
 
-# Caching plugins occasionally leave dropins and cache directories behind.
 WP_CONTENT="$($WP_CMD eval 'echo WP_CONTENT_DIR;')"
+
+# Remove the mu-plugin, drop-in, and single-file fixtures.
+while IFS='=' read -r key value; do
+  case "$key" in
+    mu_plugin)
+      rm -f "$WP_CONTENT/mu-plugins/$value"
+      echo "  removed mu-plugin fixture: $value"
+      ;;
+    dropin)
+      rm -f "$WP_CONTENT/$value"
+      echo "  removed drop-in fixture: $value"
+      ;;
+    single_file)
+      rm -f "${PLUGINS_DIR:?}/$value"
+      echo "  removed single-file fixture: $value"
+      ;;
+  esac
+done < "$STATE_FILE"
+
+# If we created the mu-plugins directory, remove it once it is empty again.
+if grep -q '^created_mu_dir=' "$STATE_FILE"; then
+  rmdir "$WP_CONTENT/mu-plugins" 2>/dev/null && echo "  removed empty mu-plugins directory" || true
+fi
+
+# Caching plugins occasionally leave dropins and cache directories behind.
 for leftover in advanced-cache.php cache/cache-enabler cache/wpfc; do
   if [ -e "$WP_CONTENT/$leftover" ]; then
     rm -rf "${WP_CONTENT:?}/$leftover"
