@@ -22,10 +22,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PluginLens_Enrichment_Manager {
 
 	/**
-	 * A slow third-party API must never make the MCP endpoint appear hung.
+	 * A slow third-party API must never make the MCP endpoint appear hung,
+	 * but a populated response is legitimately slower than an empty one.
+	 * Total timeout is filterable via pluginlens_http_timeout.
 	 */
 	const CONNECT_TIMEOUT = 3;
-	const TOTAL_TIMEOUT   = 5;
+	const TOTAL_TIMEOUT   = 10;
 
 	/**
 	 * Parallel fetches run in batches of this size. 45 simultaneous
@@ -40,10 +42,14 @@ class PluginLens_Enrichment_Manager {
 	const STORE_OPTION = 'pluginlens_enrich_store';
 
 	/**
-	 * Failed lookups are cached too, briefly, so a down API is not hammered
-	 * on every MCP request.
+	 * Failed lookups negative-cache with escalating backoff on consecutive
+	 * failures. At wordpress.org scale, thousands of installs retrying a
+	 * broken free service every 15 minutes forever is how a plugin gets
+	 * blocked at the network level (docs/DECISIONS.md 34). Reset on success.
+	 *
+	 * @var int[]
 	 */
-	const FAILURE_TTL = 900;
+	const FAILURE_BACKOFF = array( 900, 3600, 21600, 86400 );
 
 	/**
 	 * Source names that failed during this request.
@@ -151,8 +157,19 @@ class PluginLens_Enrichment_Manager {
 			);
 		}
 
+		/**
+		 * Filters the total HTTP timeout for enrichment requests, in seconds.
+		 *
+		 * The default errs generous: populated vulnerability responses do more
+		 * backend work than empty ones, and silent degradation already
+		 * protects the endpoint from hanging.
+		 *
+		 * @param int $timeout Default 10.
+		 */
+		$total_timeout = max( 1, (int) apply_filters( 'pluginlens_http_timeout', self::TOTAL_TIMEOUT ) );
+
 		$options = array(
-			'timeout'         => self::TOTAL_TIMEOUT,
+			'timeout'         => $total_timeout,
 			'connect_timeout' => self::CONNECT_TIMEOUT,
 		);
 
@@ -203,7 +220,14 @@ class PluginLens_Enrichment_Manager {
 		}
 		$entry = $store[ $key ];
 		$age   = time() - ( isset( $entry['fetched_at'] ) ? (int) $entry['fetched_at'] : 0 );
-		$ttl   = ( array_key_exists( 'data', $entry ) && null === $entry['data'] ) ? self::FAILURE_TTL : $max_age;
+
+		if ( array_key_exists( 'data', $entry ) && null === $entry['data'] ) {
+			$failures = isset( $entry['failures'] ) ? max( 1, (int) $entry['failures'] ) : 1;
+			$ttl      = self::FAILURE_BACKOFF[ min( $failures, count( self::FAILURE_BACKOFF ) ) - 1 ];
+		} else {
+			$ttl = $max_age;
+		}
+
 		if ( $age >= $ttl ) {
 			return false;
 		}
@@ -216,16 +240,27 @@ class PluginLens_Enrichment_Manager {
 	 * Queues an entry for the persistent store. Call store_flush() once per
 	 * batch; one option write per request, not one per plugin.
 	 *
+	 * A null-data entry records a failure and carries a consecutive-failure
+	 * count that store_get() turns into escalating backoff; any successful
+	 * entry resets the count.
+	 *
 	 * @param string $key  Entry key.
 	 * @param mixed  $data Data, or null to record a failed lookup.
 	 * @return void
 	 */
 	public function store_put( $key, $data ) {
-		$store             = $this->load_store();
-		$store[ $key ]     = array(
+		$store = $this->load_store();
+		$entry = array(
 			'data'       => $data,
 			'fetched_at' => time(),
 		);
+		if ( null === $data ) {
+			// array_key_exists, not isset: the stored failure data IS null.
+			$prev_entry        = isset( $store[ $key ] ) && is_array( $store[ $key ] ) ? $store[ $key ] : array();
+			$was_failure       = array_key_exists( 'data', $prev_entry ) && null === $prev_entry['data'];
+			$entry['failures'] = ( $was_failure && isset( $prev_entry['failures'] ) ? (int) $prev_entry['failures'] : 0 ) + 1;
+		}
+		$store[ $key ]     = $entry;
 		$this->store       = $store;
 		$this->store_dirty = true;
 	}
