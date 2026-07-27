@@ -103,7 +103,14 @@ class PluginLens_MCP_Server {
 			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
 		}
 
+		// Rate limiting sits before authentication so failed-token attempts
+		// are throttled too.
+		if ( ! PluginLens_Request_Guard::allow_request() ) {
+			return new WP_REST_Response( array( 'error' => 'rate_limited' ), 429 );
+		}
+
 		if ( ! $this->auth->verify( (string) $request->get_param( 'token' ) ) ) {
+			PluginLens_Request_Guard::log_failed_auth();
 			return new WP_REST_Response( array( 'error' => 'unauthorized' ), 401 );
 		}
 
