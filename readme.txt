@@ -8,19 +8,37 @@ Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Ask your AI assistant real questions about your site's plugins and get answers grounded in facts, not guesses.
+A read-only MCP server for WordPress. Connect Claude or any MCP client and query your plugin estate for vulnerabilities, bloat, and cruft.
 
 == Description ==
 
-You have questions about your WordPress site that are surprisingly hard to answer. Which of my plugins have known security vulnerabilities *in the version I'm actually running*? Which ones haven't been updated in years? What's slowing down my options table? What did that plugin I deleted in 2019 leave behind in my database? Is anything on this site actually using that shortcode plugin?
+AuditPress turns a WordPress site into a read-only MCP server. Enable the endpoint, generate a token, paste the URL into your client's connector settings, and you have nine tools against the live site.
 
-AuditPress lets you ask those questions in plain language, in an AI assistant like Claude, and get answers based on the real state of your site — not guesses.
+**The tools**
 
-It works by turning your site into a small, read-only [MCP](https://modelcontextprotocol.io/) server. MCP (Model Context Protocol) is the open standard AI assistants use to connect to outside data sources. You enable the endpoint, copy one URL into your AI client as a connector, and from then on the assistant can look up facts about your plugin estate whenever you ask: the full plugin inventory, update status, published vulnerabilities matched against your installed versions, wordpress.org health signals, end-of-life status for your PHP and WordPress versions, autoloaded option weight per plugin, cron schedules and orphaned jobs, leftover database tables, and whether registered shortcodes and blocks actually appear in your content.
+* `list_plugins` — inventory with versions, update status, and health flags (`has_vulnerability`, `closed_on_wporg`, `not_updated_2y`/`4y`, `untested_current_wp`, `no_wporg_record`, `single_file`, `mu_plugin`, `dropin`). Paginated, compact rows by default.
+* `check_vulnerabilities` — published CVEs matched against the versions actually installed, with CVSS as published, affected ranges, and fixed-in versions. Version matches only; a slug appearing in an advisory database is not a finding.
+* `get_site_overview` — WordPress, PHP, and database versions with end-of-life status, plus object cache, debug state, memory limits, cron state, and plugin counts.
+* `analyze_autoload` — autoloaded option weight attributed per plugin, largest options, and an explicit unattributed bucket.
+* `analyze_cron` — scheduled events per plugin plus orphaned hooks with no registered callback.
+* `analyze_database` — non-core tables with sizes and owners, orphaned tables listed separately.
+* `analyze_usage` — registered shortcodes, blocks, post types, and taxonomies with real occurrence counts in content.
+* `get_plugin_details` — everything above for up to five named plugins, composed in one call.
+* `get_capabilities` — machine-readable description of what the server answers, every flag's exact threshold, and what it refuses to measure.
 
-AuditPress reports facts and never verdicts. It contains no scoring, no grades, and no advice engine — the analysis is your AI assistant's job, which means the quality of the answers improves as AI models improve, without the plugin changing at all.
+**Design constraints worth knowing before you wire it up**
 
-**What AuditPress deliberately does not do:** it cannot measure per-plugin runtime cost or front-end asset weight (and says so rather than inventing numbers), and it performs no write operation of any kind.
+Facts, never verdicts. No scores, no grades, no recommendation strings — judgment belongs to the model reading the output, which means analysis improves without a plugin update.
+
+Honest degradation. Every response carries `_meta` with `sources_unavailable`, and partial results carry a `coverage` object naming the slugs that went unchecked. A check that did not run returns `null` with a stated reason, never `0`. Enrichment failures back off progressively (15 min → 24 h) rather than hammering free community APIs.
+
+Attribution confidence is always reported: `high` (curated slug-to-prefix map), `medium` (prefix derived from the slug), or visibly unattributed. Heuristics are never presented as facts.
+
+Response size is bounded. Compact rows by default, `detail: true` capped at 10 rows, `get_plugin_details` capped at 5 slugs, free text truncated at 200 characters — a full estate stays inside a usable context window.
+
+Not measured, and it says so instead of inventing numbers: per-plugin runtime cost, front-end asset weight. And it performs no write operation of any kind.
+
+Enrichment comes from api.wordpress.org, wpvulnerability.net, and endoflife.date; all keyless, all cached, all optional. A firewalled site still gets a complete inventory with the enrichment fields absent and the missing sources named.
 
 = The endpoint, stated plainly =
 
@@ -68,13 +86,17 @@ Your site must be reachable over HTTPS from the internet for a cloud AI client t
 
 == Frequently Asked Questions ==
 
-= Do I need to know what MCP is? =
+= Which clients and what does the transport look like? =
 
-No. You enable a toggle, copy a URL into your AI client, and ask questions. MCP is just the standard that makes the connection work.
+Any MCP client supporting remote servers over HTTP. Transport is Streamable HTTP with a single `application/json` response (no SSE), JSON-RPC 2.0, stateless — no session ID is issued. Protocol versions `2025-11-25`, `2025-06-18`, and `2025-03-26` are accepted; the client's requested version is echoed when supported. `initialize`, `notifications/initialized` (202, empty body), `tools/list`, `tools/call`, and `ping` are implemented. Most clients cache the tool list, so reconnect after upgrading the plugin.
 
-= Which AI clients work with it? =
+= How does authentication work? =
 
-Any MCP client that supports remote connectors over HTTP — Claude (custom connectors), and other MCP-capable clients. The endpoint speaks the standard protocol, not anything vendor-specific.
+A bearer token in the URL path: `POST /wp-json/auditpress/v1/mcp/{token}`. Generated from `random_bytes(32)`, hex encoded, compared with `hash_equals`, stored in a non-autoloaded option. `permission_callback` returns true and authentication happens inside the handler so error shapes stay under the plugin's control: 404 when the endpoint is disabled, 401 on a bad token, 429 past the rate limit (60/min per IP, filterable via `auditpress_rate_limit`). No OAuth — token-in-path is the permanent design.
+
+= Can I extend or tune it? =
+
+Tools are auto-discovered from `includes/mcp/tools/`: one file per tool, each declaring its own name, description, and JSON Schema. Filters: `auditpress_rate_limit` and `auditpress_http_timeout`. Attribution accuracy comes from `includes/data/prefix-overrides.json`, a curated slug-to-prefix map that takes pull requests — the easiest useful contribution.
 
 = Is this safe to run on a production site? =
 
@@ -86,7 +108,11 @@ No. It does nothing on normal page loads. Work happens only when your AI client 
 
 = Why doesn't it give my site a score? =
 
-Because scores would be invented. AuditPress reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the AI reading them, which can weigh your actual context instead of applying a formula.
+Because scores would be invented. AuditPress reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the model reading them, which can weigh actual context instead of applying a formula.
+
+= Does a zero usage count mean a plugin is safe to delete? =
+
+No, and the tool is deliberately narrow about this. `zero_content_usage` means exactly one thing: the plugin registers shortcodes, blocks, or post types and none appear in post content. A plugin registering no content features at all is reported as not measurable, never as unused — hooks, filters, admin screens, REST endpoints, and template code are all invisible to content scanning. Counts also scan `post_content` only, so a shortcode living in a widget, an option, or a theme template counts zero while appearing on every page.
 
 = Does it work on multisite? =
 
