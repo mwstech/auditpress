@@ -19,6 +19,13 @@ class AuditPress_Tool_Get_Plugin_Details {
 	const MAX_SLUGS = 5;
 
 	/**
+	 * Findings reported per plugin, most severe first. check_vulnerabilities
+	 * is where a full, paginated list lives; this tool is a composite record
+	 * and has four other sections to fit inside the same 20 KB budget.
+	 */
+	const MAX_FINDINGS_PER_PLUGIN = 10;
+
+	/**
 	 * Registers the tool.
 	 *
 	 * @param AuditPress_Tool_Registry $registry Tool registry.
@@ -73,7 +80,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 
 		$manager     = new AuditPress_Enrichment_Manager();
 		$wporg       = new AuditPress_WPOrg_Client( $manager );
-		$vulns       = new AuditPress_WPVulnerability_Client( $manager );
+		$vulns       = AuditPress_Tool_Check_Vulnerabilities::provider( $manager );
 		$attribution = new AuditPress_Attribution( $all_slugs );
 
 		$found_slugs   = array_keys( $records );
@@ -133,10 +140,26 @@ class AuditPress_Tool_Get_Plugin_Details {
 					$findings[] = $finding;
 				}
 			}
+			$findings = AuditPress_Tool_Check_Vulnerabilities::by_severity( $findings );
+			// Absent, not empty: a plugin nobody could check must not carry a
+			// field that reads as "no vulnerabilities" (docs/DECISIONS.md 51).
 			if ( in_array( $slug, $vuln_result['unchecked'], true ) ) {
 				$sources_missing[] = 'wpvulnerability';
 			} else {
-				$detail['vulnerabilities'] = $findings;
+				// Five slugs times an unbounded finding list blows the 20 KB
+				// budget on a neglected estate; a plugin carrying dozens of
+				// advisories gets its most severe ones and an honest count.
+				$detail['vulnerabilities'] = array_slice( $findings, 0, self::MAX_FINDINGS_PER_PLUGIN );
+				if ( count( $findings ) > self::MAX_FINDINGS_PER_PLUGIN ) {
+					$detail['vulnerabilities_total']     = count( $findings );
+					$detail['vulnerabilities_truncated'] = true;
+				}
+				if ( in_array( $slug, $vuln_result['stale'], true ) ) {
+					$detail['vulnerabilities_data_age'] = array(
+						'fetched_at' => gmdate( 'Y-m-d\TH:i:s\Z', (int) $vuln_result['oldest_fetched_at'] ),
+						'age_hours'  => round( ( time() - (int) $vuln_result['oldest_fetched_at'] ) / HOUR_IN_SECONDS, 1 ),
+					);
+				}
 			}
 
 			$detail['autoload']    = isset( $autoload_by_slug[ $slug ] ) ? $autoload_by_slug[ $slug ] : array(
@@ -151,8 +174,10 @@ class AuditPress_Tool_Get_Plugin_Details {
 				$detail['content_usage_note'] = 'Registers no shortcodes, blocks, post types, or taxonomies; content usage is not measurable for this plugin and says nothing about whether it is used.';
 			}
 
+			// Which sources had nothing to say about this specific plugin. Why
+			// they had nothing to say is in _meta.sources, once per source.
 			if ( array() !== $sources_missing ) {
-				$detail['sources_unavailable'] = $sources_missing;
+				$detail['unchecked_sources'] = $sources_missing;
 			}
 
 			$details[] = $detail;
@@ -163,7 +188,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 			count( $details ),
 			count( $details ),
 			false,
-			$manager->sources_unavailable()
+			$manager->source_status()
 		);
 	}
 

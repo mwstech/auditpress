@@ -44,20 +44,30 @@ class AuditPress_Tool_Registry {
 	 * Wraps a tool payload with the mandatory _meta object and encodes it.
 	 * Every tool response goes through this, per SPEC section 6.
 	 *
-	 * @param array $payload             Tool-specific payload.
-	 * @param int   $total               Total records matching before pagination.
-	 * @param int   $returned            Records actually included.
-	 * @param bool  $truncated           Whether pagination cut the result short.
-	 * @param array $sources_unavailable Enrichment sources that failed or are absent.
+	 * `sources` replaced the flat `sources_unavailable` array in Phase 8.7: a
+	 * list of names says something failed but not what, and "the site has no
+	 * outbound HTTP access" and "the upstream returned an error" call for
+	 * completely different responses (docs/DECISIONS.md 52). Every source that
+	 * was consulted appears, including the ones that answered normally.
+	 *
+	 * `total` and `returned` accept null for a response that reports no
+	 * records at all, so that a count of zero is never mistaken for a measured
+	 * result.
+	 *
+	 * @param array    $payload   Tool-specific payload.
+	 * @param int|null $total     Total records matching before pagination.
+	 * @param int|null $returned  Records actually included.
+	 * @param bool     $truncated Whether pagination cut the result short.
+	 * @param array    $sources   Per-source status objects, keyed by source name.
 	 * @return string JSON string.
 	 */
-	public static function with_meta( $payload, $total, $returned, $truncated, $sources_unavailable = array() ) {
+	public static function with_meta( $payload, $total, $returned, $truncated, $sources = array() ) {
 		$payload['_meta'] = array(
-			'total'               => $total,
-			'returned'            => $returned,
-			'truncated'           => $truncated,
-			'sources_unavailable' => $sources_unavailable,
-			'generated_at'        => gmdate( 'Y-m-d\TH:i:s\Z' ),
+			'total'        => $total,
+			'returned'     => $returned,
+			'truncated'    => $truncated,
+			'sources'      => (object) $sources,
+			'generated_at' => gmdate( 'Y-m-d\TH:i:s\Z' ),
 		);
 		// Escaped slashes and \uXXXX sequences get escaped again inside the
 		// MCP text block; emitting them raw keeps responses well under budget.

@@ -69,7 +69,7 @@ class AuditPress_Tool_Get_Site_Overview {
 			1,
 			1,
 			false,
-			$manager->sources_unavailable()
+			$manager->source_status()
 		);
 	}
 }

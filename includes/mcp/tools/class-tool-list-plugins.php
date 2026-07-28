@@ -90,10 +90,12 @@ class AuditPress_Tool_List_Plugins {
 
 		// Network-derived flags (docs/DECISIONS.md 18): booleans in the flags
 		// array, never numbers. When a source is unavailable its flags are
-		// simply absent, _meta.sources_unavailable says so, and coverage
-		// names the slugs nobody looked at.
+		// simply absent, _meta.sources says why, and coverage names the slugs
+		// nobody looked at. Absent must not read as "no", so a row nobody
+		// could check carries vulnerability_unknown: with neither flag, the
+		// row was checked and is clean (docs/DECISIONS.md 51).
 		$manager       = new AuditPress_Enrichment_Manager();
-		$vuln_client   = new AuditPress_WPVulnerability_Client( $manager );
+		$vuln_client   = AuditPress_Tool_Check_Vulnerabilities::provider( $manager );
 		$wporg_client  = new AuditPress_WPOrg_Client( $manager );
 		$slug_versions = array();
 		foreach ( $records as $record ) {
@@ -137,7 +139,9 @@ class AuditPress_Tool_List_Plugins {
 
 		$rows = array();
 		foreach ( $page as $record ) {
-			$has_vuln = isset( $vuln_map[ $record['slug'] ] ) ? $vuln_map[ $record['slug'] ] : null;
+			// array_key_exists, not isset: a checked-and-clean slug maps to
+			// false, which isset() would report the same as never checked.
+			$has_vuln = array_key_exists( $record['slug'], $vuln_map ) ? $vuln_map[ $record['slug'] ] : null;
 			$wporg    = isset( $wporg_map[ $record['slug'] ] ) ? $wporg_map[ $record['slug'] ] : null;
 			$rows[]   = self::row( $record, $detail, $has_vuln, $wporg, $cycle_index );
 		}
@@ -156,7 +160,7 @@ class AuditPress_Tool_List_Plugins {
 		) as $source => $map ) {
 			$unchecked = array();
 			foreach ( array_keys( $slug_versions ) as $slug ) {
-				if ( ! isset( $map[ $slug ] ) || null === $map[ $slug ] ) {
+				if ( ! array_key_exists( $slug, $map ) || null === $map[ $slug ] ) {
 					$unchecked[] = $slug;
 				}
 			}
@@ -178,7 +182,7 @@ class AuditPress_Tool_List_Plugins {
 			$total,
 			count( $rows ),
 			( $offset + count( $rows ) ) < $total,
-			$manager->sources_unavailable()
+			$manager->source_status()
 		);
 	}
 
@@ -284,6 +288,11 @@ class AuditPress_Tool_List_Plugins {
 
 		if ( true === $has_vuln ) {
 			$flags[] = 'has_vulnerability';
+		} elseif ( null === $has_vuln ) {
+			// Nobody looked. Without this the row is indistinguishable from a
+			// row that was checked and came back clean, and the safe-looking
+			// reading is the wrong one.
+			$flags[] = 'vulnerability_unknown';
 		}
 
 		if ( null !== $wporg ) {
