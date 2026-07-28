@@ -204,7 +204,15 @@ Every response carries:
   "total": 47,
   "returned": 25,
   "truncated": true,
-  "sources_unavailable": ["wpvulnerability"],
+  "sources": {
+    "wporg": { "status": "ok", "last_success": "2026-07-28T09:14:20Z" },
+    "wpvulnerability": {
+      "status": "unavailable",
+      "reason": "backoff_active",
+      "last_success": "2026-07-26T22:03:11Z",
+      "next_retry": "2026-07-28T15:40:00Z"
+    }
+  },
   "generated_at": "2026-07-27T09:14:22Z"
 }
 ```
@@ -289,7 +297,7 @@ These are the parts where a wrong assumption costs a day.
 
 ## 8. Enrichment specification
 
-All three clients implement the same interface: return data or `null`, never throw, always cache, always record their own availability into `_meta.sources_unavailable`.
+All three clients implement the same interface: return data or `null`, never throw, always cache, always record their own status into `_meta.sources` (Phase 8.7 replaced the flat `sources_unavailable` name list with one object per source: status, reason code, last success, next retry — see docs/DECISIONS.md 52).
 
 Use WordPress's bundled Requests library for parallel fetches. Serial requests across sixty plugins will time out.
 
@@ -361,7 +369,7 @@ Design this in at Phase 2. Retrofitting it means rewriting every tool.
 - `get_plugin_details` accepts at most 5 slugs.
 - Truncate every free-text field: descriptions at 200 characters, no exceptions.
 - Round all byte values to two significant figures and label the unit.
-- Every response reports `total`, `returned`, and `truncated` so the client knows to paginate.
+- Every response reports `total`, `returned`, and `truncated` so the client knows to paginate. `total` and `returned` are `null`, never `0`, when no measurement was made.
 
 A sixty-plugin site returning full metadata will exhaust the context window and make the product useless. This constraint is the difference between a tool that works and one that technically functions.
 
@@ -430,5 +438,6 @@ CCD creates `docs/DECISIONS.md` at Phase 0 and appends an entry for every choice
 - Endpoint disabled by default. Do not change to enabled for a smoother onboarding.
 - No Composer runtime dependencies. Do not introduce a package to save fifty lines.
 - Attribution confidence is always reported. Do not drop the field to tidy the output.
-- `sources_unavailable` is always reported. Do not silently omit failed enrichment.
+- `_meta.sources` is always reported, with a reason code whenever a source is not `ok`. Do not silently omit failed enrichment.
+- A result that could not be produced does not ship an empty container in its place. `check_vulnerabilities` returns no `findings` array at all in its `not_performed` state (docs/DECISIONS.md 51).
 - No central hosted service. Every install is self-contained.

@@ -96,7 +96,7 @@ A bearer token in the URL path: `POST /wp-json/auditpress/v1/mcp/{token}`. Gener
 
 = Can I extend or tune it? =
 
-Tools are auto-discovered from `includes/mcp/tools/`: one file per tool, each declaring its own name, description, and JSON Schema. Filters: `auditpress_rate_limit` and `auditpress_http_timeout`. Attribution accuracy comes from `includes/data/prefix-overrides.json`, a curated slug-to-prefix map that takes pull requests — the easiest useful contribution.
+Tools are auto-discovered from `includes/mcp/tools/`: one file per tool, each declaring its own name, description, and JSON Schema. Filters: `auditpress_rate_limit`, `auditpress_http_timeout`, and `auditpress_vulnerability_provider` — the last swaps the vulnerability data source for any class implementing the provider interface, which is one file (see CONTRIBUTING.md). Attribution accuracy comes from `includes/data/prefix-overrides.json`, a curated slug-to-prefix map that takes pull requests — the easiest useful contribution.
 
 = Is this safe to run on a production site? =
 
@@ -120,7 +120,13 @@ Not properly in v1. It operates on the individual site it runs on; managing it o
 
 = What happens if one of the external services is down? =
 
-The affected answers degrade gracefully: the response says exactly which source was unavailable and which plugins went unchecked, rather than pretending a partial answer is complete. Failing services are retried with increasing backoff (up to 24 hours) to avoid hammering free community APIs.
+The affected answers degrade explicitly rather than quietly.
+
+Every response carries a status object per source: whether it answered, why it did not, when it last answered successfully, and when the next retry is due. Failing services are retried with increasing backoff (up to 24 hours) to avoid hammering free community APIs.
+
+If a source is unreachable but cached data survives, that data is served and labeled with its exact age — six-day-old wordpress.org data is far more useful than none. Vulnerability data is the exception: it is discarded after 72 hours, because a CVE published yesterday does not appear in a three-day-old cache.
+
+`check_vulnerabilities` states which of four situations produced its answer: everything checked, everything checked from cached data past its expiry, some plugins checked and the rest named, or nothing checked at all. In the last case it returns **no findings list whatsoever** — an empty list is shaped like an answer, and "I looked and found nothing" is not the same statement as "I could not look".
 
 == Screenshots ==
 
@@ -135,6 +141,7 @@ The affected answers degrade gracefully: the response says exactly which source 
 * Nine read-only MCP tools: get_capabilities, list_plugins, get_site_overview, check_vulnerabilities, analyze_autoload, analyze_cron, analyze_database, analyze_usage, get_plugin_details.
 * MCP over JSON-RPC 2.0 on a single Streamable HTTP endpoint, stateless, protocol versions 2025-11-25, 2025-06-18, and 2025-03-26.
 * Enrichment from wordpress.org, WPVulnerability, and endoflife.date: keyless, cached, parallel-fetched, with per-source coverage reporting and progressive backoff on failure.
+* Explicit degradation: per-source status objects with reason codes, stale-but-labeled data served when an upstream is unreachable, and a four-state vulnerability response that returns no findings list at all when nothing could be checked.
 * Attribution engine mapping options, tables, and cron hooks to owning plugins with explicit confidence levels and a visible unattributed bucket.
 * Security: endpoint disabled by default, token authentication compared with hash_equals, per-IP rate limiting, failed-authentication log, and a CI gate that fails the build if any write operation is introduced.
 
