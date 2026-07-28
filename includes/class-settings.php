@@ -249,10 +249,32 @@ class AuditPress_Settings {
 			<?php if ( $enabled && $has_token ) : ?>
 				<h2><?php esc_html_e( 'Connection URL', 'auditpress' ); ?></h2>
 				<p><?php esc_html_e( 'Add this URL to your MCP client (for example, Claude custom connectors). Treat it like a password.', 'auditpress' ); ?></p>
-				<?php $connection_url = rest_url( AuditPress_MCP_Server::REST_NAMESPACE . '/mcp/' . $token ); ?>
+				<?php
+				$connection_url = rest_url( AuditPress_MCP_Server::REST_NAMESPACE . '/mcp/' . $token );
+				// Remote MCP clients require HTTPS. A site whose stored URL is
+				// http:// but which redirects to https silently breaks the
+				// connection: the 301 drops the POST body and the client sees
+				// an unreachable server, not a redirect. Offer the https form
+				// so nobody copies a URL that cannot work.
+				$is_https  = 0 === strpos( $connection_url, 'https://' );
+				$https_url = set_url_scheme( $connection_url, 'https' );
+				?>
 				<p>
-					<input type="text" readonly id="auditpress-connection-url" class="large-text code" value="<?php echo esc_attr( $connection_url ); ?>" onfocus="this.select();" />
+					<input type="text" readonly id="auditpress-connection-url" class="large-text code" value="<?php echo esc_attr( $is_https ? $connection_url : $https_url ); ?>" onfocus="this.select();" />
 				</p>
+				<?php if ( ! $is_https ) : ?>
+					<div class="notice notice-warning inline">
+						<p>
+							<strong><?php esc_html_e( 'This site is configured with an http:// address, so the URL above has been switched to https:// for you.', 'auditpress' ); ?></strong>
+						</p>
+						<p>
+							<?php esc_html_e( 'Remote MCP clients require HTTPS. If this site redirects http to https, copying the http:// form would appear to fail for a confusing reason: the redirect discards the request body, so the client reports the server as unreachable rather than redirected.', 'auditpress' ); ?>
+						</p>
+						<p>
+							<?php esc_html_e( 'If this site genuinely has no working HTTPS certificate, a remote MCP client cannot connect to it at all until that is fixed.', 'auditpress' ); ?>
+						</p>
+					</div>
+				<?php endif; ?>
 				<?php if ( '' === (string) get_option( 'permalink_structure', '' ) ) : ?>
 					<p class="description">
 						<?php esc_html_e( 'This site uses plain permalinks, so the URL above carries a query string (?rest_route=). The endpoint works in this form. If your MCP client rejects the URL or mangles the query string, switch Settings → Permalinks to any option other than Plain and copy the URL again.', 'auditpress' ); ?>
