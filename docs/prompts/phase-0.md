@@ -8,7 +8,7 @@ Prerequisites, all done by Benny before pasting this:
 - LocalWP site `auditpress` created, SSL trusted, permalinks set to Post name
 - outsourcewebdesign.com cloned into that Local site and loading correctly
 - Repo cloned into the Local site's plugins directory
-- `ssh auditpress-test` connects and `wp --info` works
+- `ssh pluginlens-test` connects and `wp --info` works
 - Live site pre-flight checks in `ENVIRONMENT-SETUP.md` section 6 have passed
 
 Paste everything below the line into CCD.
@@ -25,7 +25,7 @@ You are building AuditPress, a WordPress plugin that turns the site it is instal
 - The repo is cloned directly into that site's plugins directory, so the repo and the active plugin are the same folder. No sync step for local work.
 - WP-CLI is available through the LocalWP site shell
 - Live site: `https://www.outsourcewebdesign.com`, dormant since 2015, used only to prove the connector works over public HTTPS
-- SSH alias for the live site: `auditpress-test`
+- SSH alias for the live site: `pluginlens-test`
 
 Always use the `www.` form of the live URL. The site canonicalizes to `www.` and a redirect on a POST will drop the request body.
 
@@ -35,7 +35,7 @@ Always use the `www.` form of the live URL. The site canonicalizes to `www.` and
 2. One feature per commit. No chained tasks in a single commit. Commit messages in the form `phase-0: add settings page token generation`.
 3. Read-only against WordPress. This codebase must never contain a call to `activate_plugin`, `deactivate_plugins`, `delete_plugins`, any `*_Upgrader` class, or any `INSERT`, `UPDATE`, `DELETE`, `DROP`, or `ALTER` SQL. The seed and teardown scripts in `tests/` are the sole exception and never ship.
 4. No Composer runtime dependencies. WordPress ships everything needed, and a dependency-free plugin means deploying is one rsync with no build step.
-5. Never ask me for SSH credentials, WP admin passwords, or token values, and never write any of them into a file, a commit, or a log line. The SSH host is configured as `auditpress-test`. Use that alias and nothing else.
+5. Never ask me for SSH credentials, WP admin passwords, or token values, and never write any of them into a file, a commit, or a log line. The SSH host is configured as `pluginlens-test`. Use that alias and nothing else.
 6. **All development happens against the Local clone.** The live site is touched only at step I, only when I ask. Never run the seed script against the live site.
 7. When you make a decision a future agent might reverse, append it to `docs/DECISIONS.md` with the rule and the reason.
 8. If an external API is unreachable during development, mock it and continue. Do not stall waiting for network access.
