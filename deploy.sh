@@ -2,12 +2,12 @@
 #
 # Deploys the plugin to the live test site as one rsync over SSH.
 # Never automatic: run by hand when a phase is complete and the connector
-# needs proving. Uses the pluginlens-test SSH alias and nothing else.
+# needs proving. Uses the auditpress-test SSH alias and nothing else.
 
 set -euo pipefail
 
-REMOTE="pluginlens-test"
-REMOTE_PATH="domains/outsourcewebdesign.com/public_html/wp-content/plugins/pluginlens/"
+REMOTE="auditpress-test"
+REMOTE_PATH="domains/outsourcewebdesign.com/public_html/wp-content/plugins/auditpress/"
 
 cd "$(dirname "$0")"
 

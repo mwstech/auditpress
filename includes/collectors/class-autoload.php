@@ -5,7 +5,7 @@
  * Reads the options table directly. Never selects option values, only names
  * and lengths. Makes no network calls.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Collects autoloaded option names and sizes.
  */
-class PluginLens_Autoload_Collector {
+class AuditPress_Autoload_Collector {
 
 	/**
 	 * Maximum autoloaded options examined in one pass.

@@ -8,7 +8,7 @@
  * _meta.sources_unavailable honestly. Enrichment must never block or break a
  * response.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -19,12 +19,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Orchestrates enrichment clients. One instance per request, shared across
  * clients so unavailability is reported once per source.
  */
-class PluginLens_Enrichment_Manager {
+class AuditPress_Enrichment_Manager {
 
 	/**
 	 * A slow third-party API must never make the MCP endpoint appear hung,
 	 * but a populated response is legitimately slower than an empty one.
-	 * Total timeout is filterable via pluginlens_http_timeout.
+	 * Total timeout is filterable via auditpress_http_timeout.
 	 */
 	const CONNECT_TIMEOUT = 3;
 	const TOTAL_TIMEOUT   = 10;
@@ -46,7 +46,7 @@ class PluginLens_Enrichment_Manager {
 	 * Persistent store: a single non-autoloaded option holding a keyed map of
 	 * entry => {data, fetched_at}. See docs/DECISIONS.md 22.
 	 */
-	const STORE_OPTION = 'pluginlens_enrich_store';
+	const STORE_OPTION = 'auditpress_enrich_store';
 
 	/**
 	 * Failed lookups negative-cache with escalating backoff on consecutive
@@ -159,7 +159,7 @@ class PluginLens_Enrichment_Manager {
 				'type'    => 'GET',
 				'headers' => array(
 					'Accept'     => 'application/json',
-					'User-Agent' => 'PluginLens/' . PLUGINLENS_VERSION . ' (WordPress plugin; https://www.macronimous.com/free-tools/pluginlens/)',
+					'User-Agent' => 'AuditPress/' . AUDITPRESS_VERSION . ' (WordPress plugin; https://www.macronimous.com/free-tools/auditpress/)',
 				),
 			);
 		}
@@ -173,7 +173,7 @@ class PluginLens_Enrichment_Manager {
 		 *
 		 * @param int $timeout Default 10.
 		 */
-		$total_timeout = max( 1, (int) apply_filters( 'pluginlens_http_timeout', self::TOTAL_TIMEOUT ) );
+		$total_timeout = max( 1, (int) apply_filters( 'auditpress_http_timeout', self::TOTAL_TIMEOUT ) );
 
 		$options = array(
 			'timeout'         => $total_timeout,
@@ -323,7 +323,7 @@ class PluginLens_Enrichment_Manager {
 	 * @return mixed False when absent.
 	 */
 	public function cache_get( $key ) {
-		return get_transient( 'pluginlens_enrich_' . $key );
+		return get_transient( 'auditpress_enrich_' . $key );
 	}
 
 	/**
@@ -335,6 +335,6 @@ class PluginLens_Enrichment_Manager {
 	 * @return void
 	 */
 	public function cache_set( $key, $value, $ttl ) {
-		set_transient( 'pluginlens_enrich_' . $key, $value, $ttl );
+		set_transient( 'auditpress_enrich_' . $key, $value, $ttl );
 	}
 }

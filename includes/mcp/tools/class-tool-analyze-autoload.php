@@ -2,7 +2,7 @@
 /**
  * The analyze_autoload tool.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Autoloaded option weight attributed per plugin, with the unattributed
  * bucket always visible — especially when it is large.
  */
-class PluginLens_Tool_Analyze_Autoload {
+class AuditPress_Tool_Analyze_Autoload {
 
 	const DEFAULT_TOP = 20;
 	const MAX_TOP     = 100;
@@ -22,7 +22,7 @@ class PluginLens_Tool_Analyze_Autoload {
 	/**
 	 * Registers the tool.
 	 *
-	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @param AuditPress_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -54,14 +54,14 @@ class PluginLens_Tool_Analyze_Autoload {
 	public static function run( $args ) {
 		$top = isset( $args['top'] ) ? max( 1, min( self::MAX_TOP, (int) $args['top'] ) ) : self::DEFAULT_TOP;
 
-		$inventory = new PluginLens_Inventory_Collector();
+		$inventory = new AuditPress_Inventory_Collector();
 		$slugs     = array();
 		foreach ( $inventory->collect() as $record ) {
 			$slugs[] = $record['slug'];
 		}
-		$attribution = new PluginLens_Attribution( $slugs );
+		$attribution = new AuditPress_Attribution( $slugs );
 
-		$collector = new PluginLens_Autoload_Collector();
+		$collector = new AuditPress_Autoload_Collector();
 		$options   = $collector->collect();
 
 		$total_bytes = array_sum( $options );
@@ -81,7 +81,7 @@ class PluginLens_Tool_Analyze_Autoload {
 			if ( $largest_taken < self::LARGEST_N ) {
 				$largest[] = array(
 					'option'     => $name,
-					'size'       => PluginLens_Tool_Registry::format_bytes( $size ),
+					'size'       => AuditPress_Tool_Registry::format_bytes( $size ),
 					'owner'      => null !== $owner ? $owner['slug'] : null,
 					'confidence' => null !== $owner ? $owner['confidence'] : null,
 				);
@@ -120,26 +120,26 @@ class PluginLens_Tool_Analyze_Autoload {
 		$owner_total = count( $owners );
 		$owners      = array_slice( array_values( $owners ), 0, $top );
 		foreach ( $owners as $i => $owner ) {
-			$owners[ $i ]['size'] = PluginLens_Tool_Registry::format_bytes( $owner['bytes'] );
+			$owners[ $i ]['size'] = AuditPress_Tool_Registry::format_bytes( $owner['bytes'] );
 			unset( $owners[ $i ]['bytes'] );
 		}
 
 		$payload = array(
 			'total'        => array(
-				'size'    => PluginLens_Tool_Registry::format_bytes( $total_bytes ),
+				'size'    => AuditPress_Tool_Registry::format_bytes( $total_bytes ),
 				'bytes'   => $total_bytes,
 				'options' => $total_count,
 			),
 			'owners'       => $owners,
 			'largest'      => $largest,
 			'unattributed' => array(
-				'size'         => PluginLens_Tool_Registry::format_bytes( $unattributed['bytes'] ),
+				'size'         => AuditPress_Tool_Registry::format_bytes( $unattributed['bytes'] ),
 				'bytes'        => $unattributed['bytes'],
 				'options'      => $unattributed['options'],
 				'pct_of_total' => $total_bytes > 0 ? round( 100 * $unattributed['bytes'] / $total_bytes, 1 ) : 0,
 			),
 		);
 
-		return PluginLens_Tool_Registry::with_meta( $payload, $owner_total, count( $owners ), count( $owners ) < $owner_total );
+		return AuditPress_Tool_Registry::with_meta( $payload, $owner_total, count( $owners ), count( $owners ) < $owner_total );
 	}
 }

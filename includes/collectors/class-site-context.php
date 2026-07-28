@@ -5,7 +5,7 @@
  * Reads WordPress and PHP directly. Makes no network calls. Knows nothing
  * about MCP.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Collects versions, environment flags, and top-level counts.
  */
-class PluginLens_Site_Context_Collector {
+class AuditPress_Site_Context_Collector {
 
 	/**
 	 * Returns the site context as a plain array.
@@ -107,7 +107,7 @@ class PluginLens_Site_Context_Collector {
 			'mu'       => 0,
 			'dropin'   => 0,
 		);
-		$collector = new PluginLens_Inventory_Collector();
+		$collector = new AuditPress_Inventory_Collector();
 		foreach ( $collector->collect() as $record ) {
 			if ( isset( $counts[ $record['status'] ] ) ) {
 				++$counts[ $record['status'] ];

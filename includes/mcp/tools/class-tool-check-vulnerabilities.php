@@ -2,7 +2,7 @@
 /**
  * The check_vulnerabilities tool.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,12 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * version matches, never slug matches. Severity and scores are reported as
  * the source returns them, never invented.
  */
-class PluginLens_Tool_Check_Vulnerabilities {
+class AuditPress_Tool_Check_Vulnerabilities {
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @param AuditPress_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -55,7 +55,7 @@ class PluginLens_Tool_Check_Vulnerabilities {
 		$requested    = isset( $args['slugs'] ) && is_array( $args['slugs'] ) ? array_map( 'strval', $args['slugs'] ) : null;
 		$include_core = ! isset( $args['include_core'] ) || (bool) $args['include_core'];
 
-		$collector     = new PluginLens_Inventory_Collector();
+		$collector     = new AuditPress_Inventory_Collector();
 		$slug_versions = array();
 		foreach ( $collector->collect() as $record ) {
 			// mu-plugins and drop-ins have no wp.org identity to look up.
@@ -68,8 +68,8 @@ class PluginLens_Tool_Check_Vulnerabilities {
 			$slug_versions[ $record['slug'] ] = $record['version'];
 		}
 
-		$manager = new PluginLens_Enrichment_Manager();
-		$client  = new PluginLens_WPVulnerability_Client( $manager );
+		$manager = new AuditPress_Enrichment_Manager();
+		$client  = new AuditPress_WPVulnerability_Client( $manager );
 
 		$result = $client->plugin_findings( $slug_versions );
 
@@ -100,7 +100,7 @@ class PluginLens_Tool_Check_Vulnerabilities {
 			}
 		}
 
-		return PluginLens_Tool_Registry::with_meta(
+		return AuditPress_Tool_Registry::with_meta(
 			$payload,
 			count( $result['findings'] ),
 			count( $result['findings'] ),

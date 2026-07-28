@@ -1,6 +1,6 @@
 <?php
 /**
- * CLI harness that speaks raw JSON-RPC to a PluginLens MCP endpoint.
+ * CLI harness that speaks raw JSON-RPC to a AuditPress MCP endpoint.
  *
  * Usage:
  *   php tests/mcp-client.php <endpoint-url> [--insecure] [--call <tool> [--args '<json>']]
@@ -11,7 +11,7 @@
  *
  * This file never ships to wp.org and never runs inside WordPress.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( PHP_SAPI !== 'cli' ) {
@@ -19,13 +19,13 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit( 1 );
 }
 
-$options = pluginlens_client_parse_argv( array_slice( $argv, 1 ) );
+$options = auditpress_client_parse_argv( array_slice( $argv, 1 ) );
 if ( null === $options ) {
 	fwrite( STDERR, "Usage: php tests/mcp-client.php <endpoint-url> [--insecure] [--call <tool> [--args '<json>']]\n" );
 	exit( 1 );
 }
 
-$client = new PluginLens_MCP_Client( $options['url'], $options['insecure'] );
+$client = new AuditPress_MCP_Client( $options['url'], $options['insecure'] );
 
 $failures = 0;
 
@@ -36,7 +36,7 @@ $init = $client->request(
 		'protocolVersion' => '2025-11-25',
 		'capabilities'    => new stdClass(),
 		'clientInfo'      => array(
-			'name'    => 'pluginlens-test-harness',
+			'name'    => 'auditpress-test-harness',
 			'version' => '0.1.0',
 		),
 	)
@@ -137,7 +137,7 @@ exit( 1 );
  * @param string[] $args Arguments after the script name.
  * @return array{url: string, insecure: bool, call: ?string, args: array|stdClass}|null
  */
-function pluginlens_client_parse_argv( $args ) {
+function auditpress_client_parse_argv( $args ) {
 	$out = array(
 		'url'      => '',
 		'insecure' => false,
@@ -171,7 +171,7 @@ function pluginlens_client_parse_argv( $args ) {
 /**
  * Minimal JSON-RPC-over-HTTP client for the MCP endpoint.
  */
-class PluginLens_MCP_Client {
+class AuditPress_MCP_Client {
 
 	/**
 	 * Endpoint URL.

@@ -2,7 +2,7 @@
 /**
  * The get_site_overview tool.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,12 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * versions, cycles, dates, and whether dates have passed. No severity labels,
  * no advice — the client does the judgment.
  */
-class PluginLens_Tool_Get_Site_Overview {
+class AuditPress_Tool_Get_Site_Overview {
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @param AuditPress_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -40,11 +40,11 @@ class PluginLens_Tool_Get_Site_Overview {
 	 * @return string JSON string.
 	 */
 	public static function run() {
-		$collector = new PluginLens_Site_Context_Collector();
+		$collector = new AuditPress_Site_Context_Collector();
 		$context   = $collector->collect();
 
-		$manager = new PluginLens_Enrichment_Manager();
-		$eol     = new PluginLens_Endoflife_Client( $manager );
+		$manager = new AuditPress_Enrichment_Manager();
+		$eol     = new AuditPress_Endoflife_Client( $manager );
 
 		$statuses = $eol->support_statuses(
 			array(
@@ -64,7 +64,7 @@ class PluginLens_Tool_Get_Site_Overview {
 			$context['support_status'] = $support;
 		}
 
-		return PluginLens_Tool_Registry::with_meta(
+		return AuditPress_Tool_Registry::with_meta(
 			$context,
 			1,
 			1,

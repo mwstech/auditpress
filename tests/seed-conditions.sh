@@ -125,18 +125,18 @@ if [ ! -d "$MU_DIR" ]; then
   mkdir -p "$MU_DIR"
   echo "created_mu_dir=1" >> "$STATE_FILE"
 fi
-if [ ! -f "$MU_DIR/pluginlens-mu-fixture.php" ]; then
-  cat > "$MU_DIR/pluginlens-mu-fixture.php" <<'PHP'
+if [ ! -f "$MU_DIR/auditpress-mu-fixture.php" ]; then
+  cat > "$MU_DIR/auditpress-mu-fixture.php" <<'PHP'
 <?php
 /**
- * Plugin Name: PluginLens MU Fixture
+ * Plugin Name: AuditPress MU Fixture
  * Description: Test fixture: a must-use plugin, to verify mu-plugin inventory. Does nothing.
  * Version: 1.0
  */
 PHP
-  echo "mu_plugin=pluginlens-mu-fixture.php" >> "$STATE_FILE"
+  echo "mu_plugin=auditpress-mu-fixture.php" >> "$STATE_FILE"
 fi
-echo "  [6] mu-plugin fixture: pluginlens-mu-fixture.php"
+echo "  [6] mu-plugin fixture: auditpress-mu-fixture.php"
 
 # ---- Condition 7: an object-cache.php drop-in ----
 # Pass-through to WordPress's default cache implementation, so the site
@@ -228,7 +228,7 @@ $WP_CMD cron event list --fields=hook | grep -c "$ORPHAN_HOOK" | sed 's/^/  orph
 ACTIVE_CACHING="$($WP_CMD plugin list --status=active --field=name | grep -cE '^(cache-enabler|wp-fastest-cache)$' || true)"
 echo "  active caching plugins (want 2): $ACTIVE_CACHING"
 [ -f "$CLOSED_DIR/display-widgets.php" ] && echo "  closed plugin fixture: present"
-[ -f "$MU_DIR/pluginlens-mu-fixture.php" ] && echo "  mu-plugin fixture: present"
+[ -f "$MU_DIR/auditpress-mu-fixture.php" ] && echo "  mu-plugin fixture: present"
 [ -f "$WP_CONTENT/object-cache.php" ] && echo "  object-cache.php drop-in: present"
 [ -f "$PLUGINS_DIR/legacy-maintenance-notice.php" ] && echo "  single-file plugin fixture: present"
 echo "  total plugins now: $($WP_CMD plugin list --field=name | wc -l | tr -d ' ')"

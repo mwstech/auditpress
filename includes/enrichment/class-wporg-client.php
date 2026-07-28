@@ -14,7 +14,7 @@
  * cache must not depend on the object cache. Returns data or null, never
  * throws. Caches 24 hours.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Answers "what does wordpress.org know about these plugins?".
  */
-class PluginLens_WPOrg_Client implements PluginLens_Enrichment_Client_Interface {
+class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface {
 
 	const HOST      = 'api.wordpress.org';
 	const CACHE_TTL = DAY_IN_SECONDS;
@@ -32,16 +32,16 @@ class PluginLens_WPOrg_Client implements PluginLens_Enrichment_Client_Interface 
 	/**
 	 * Shared manager.
 	 *
-	 * @var PluginLens_Enrichment_Manager
+	 * @var AuditPress_Enrichment_Manager
 	 */
 	private $manager;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param PluginLens_Enrichment_Manager $manager Shared manager.
+	 * @param AuditPress_Enrichment_Manager $manager Shared manager.
 	 */
-	public function __construct( PluginLens_Enrichment_Manager $manager ) {
+	public function __construct( AuditPress_Enrichment_Manager $manager ) {
 		$this->manager = $manager;
 	}
 

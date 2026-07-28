@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<ruleset name="PluginLens">
-	<description>PluginLens coding standards: WordPress-Extra.</description>
+<ruleset name="AuditPress">
+	<description>AuditPress coding standards: WordPress-Extra.</description>
 
-	<file>pluginlens.php</file>
+	<file>auditpress.php</file>
 	<file>uninstall.php</file>
 	<file>includes</file>
 
@@ -31,7 +31,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="pluginlens"/>
+				<element value="auditpress"/>
 			</property>
 		</properties>
 	</rule>
@@ -39,9 +39,9 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="pluginlens"/>
-				<element value="PluginLens"/>
-				<element value="PLUGINLENS"/>
+				<element value="auditpress"/>
+				<element value="AuditPress"/>
+				<element value="AUDITPRESS"/>
 			</property>
 		</properties>
 	</rule>

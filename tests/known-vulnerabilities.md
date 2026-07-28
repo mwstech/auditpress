@@ -42,7 +42,7 @@ whether the site has untrusted low-privilege users.
 | redirection | 5.5.2 | Zero present advisories; most recent patched entry is 3.6.2 (2018). |
 | akismet | 5.3.7 (inactive) | Zero present advisories; last one at 3.1.4 (2015). |
 | really-simple-captcha | 2.4 | No advisories; CleanTalk secure-code certification at exactly 2.4 (June 2026). |
-| pluginlens | 0.1.0 | Not on wp.org; no advisory record exists. Expect no wp.org identity, not "clean". |
+| auditpress | 0.1.0 | Not on wp.org; no advisory record exists. Expect no wp.org identity, not "clean". |
 
 ## Core
 
@@ -60,7 +60,7 @@ on this site. Do not let a scanner or a client conflate the two.
 ## How to run the comparison
 
 ```
-php tests/mcp-client.php https://{live-test-site}/wp-json/pluginlens/v1/mcp/{token} \
+php tests/mcp-client.php https://{live-test-site}/wp-json/auditpress/v1/mcp/{token} \
   --call check_vulnerabilities
 ```
 

@@ -1,4 +1,4 @@
-# CCD Prompt: PluginLens Phase 1
+# CCD Prompt: AuditPress Phase 1
 
 Covers what `docs/SPEC.md` calls Phase 1 and Phase 2, merged. The transport work planned for Phase 1 was already completed during Phase 0 to get the connector working, so what remains is the tool registry pattern plus the first real collector.
 

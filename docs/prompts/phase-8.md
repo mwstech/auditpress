@@ -1,4 +1,4 @@
-# CCD Prompt: PluginLens Phase 8
+# CCD Prompt: AuditPress Phase 8
 
 Packaging for wordpress.org. No logic changes.
 
@@ -60,7 +60,7 @@ Add a line to the readme crediting WPVulnerability as a free, volunteer-run serv
 
 ### E. Internationalization
 
-Every user-facing string wrapped in the correct translation function with text domain `pluginlens`. Text domain matches the slug exactly.
+Every user-facing string wrapped in the correct translation function with text domain `auditpress`. Text domain matches the slug exactly.
 
 **One specific trap.** WordPress 6.7 introduced a `doing_it_wrong` notice when translation functions are called before `init`. Phase 7 achieved a clean `WP_DEBUG` log across all nine tools. Adding i18n can reintroduce notices if any string is translated too early, particularly in class constructors or during `plugins_loaded`. Re-run the full `WP_DEBUG` pass after i18n is complete and confirm the log is still clean.
 

@@ -1,4 +1,4 @@
-# CCD Prompt: PluginLens Phase 7
+# CCD Prompt: AuditPress Phase 7
 
 Hardening. No new features.
 
