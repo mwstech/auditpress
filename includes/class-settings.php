@@ -14,7 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class AuditPress_Settings {
 
-	const PAGE_SLUG = 'auditpress';
+	const PAGE_SLUG     = 'auditpress';
+	const OPTION_NOTICE = 'auditpress_show_activation_notice';
 
 	/**
 	 * Registers admin hooks.
@@ -25,6 +26,86 @@ class AuditPress_Settings {
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
 		add_action( 'admin_post_auditpress_save_settings', array( $this, 'handle_save_settings' ) );
 		add_action( 'admin_post_auditpress_regenerate_token', array( $this, 'handle_regenerate_token' ) );
+		add_action( 'admin_post_auditpress_dismiss_notice', array( $this, 'handle_dismiss_notice' ) );
+		add_action( 'admin_notices', array( $this, 'render_activation_notice' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( AUDITPRESS_PLUGIN_FILE ), array( $this, 'add_settings_link' ) );
+	}
+
+	/**
+	 * Adds a Settings link to the plugin's row on the Plugins screen — the
+	 * first place anyone looks after activating.
+	 *
+	 * @param string[] $links Existing action links.
+	 * @return string[]
+	 */
+	public function add_settings_link( $links ) {
+		if ( ! current_user_can( $this->capability() ) ) {
+			return $links;
+		}
+		$link = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( admin_url( 'tools.php?page=' . self::PAGE_SLUG ) ),
+			esc_html__( 'Settings', 'auditpress' )
+		);
+		array_unshift( $links, $link );
+		return $links;
+	}
+
+	/**
+	 * One notice after activation explaining that the plugin is intentionally
+	 * inert until the endpoint is enabled. Disappears permanently once the
+	 * endpoint is enabled or the notice is dismissed.
+	 *
+	 * @return void
+	 */
+	public function render_activation_notice() {
+		if ( '1' !== get_option( self::OPTION_NOTICE, '' ) ) {
+			return;
+		}
+		if ( ! current_user_can( $this->capability() ) ) {
+			return;
+		}
+		// Enabling the endpoint answers the notice; stop showing it.
+		if ( '1' === get_option( AuditPress_Token_Auth::OPTION_ENABLED, '' ) ) {
+			delete_option( self::OPTION_NOTICE );
+			return;
+		}
+		// Already on the settings page: the page says all of this itself.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen instanceof WP_Screen && 'tools_page_' . self::PAGE_SLUG === $screen->id ) {
+			return;
+		}
+		?>
+		<div class="notice notice-info">
+			<p>
+				<strong><?php esc_html_e( 'AuditPress is installed and doing nothing — by design.', 'auditpress' ); ?></strong>
+			</p>
+			<p>
+				<?php esc_html_e( 'The MCP endpoint is disabled, so the plugin exposes nothing and changes nothing until you enable it and generate a token.', 'auditpress' ); ?>
+			</p>
+			<p>
+				<a href="<?php echo esc_url( admin_url( 'tools.php?page=' . self::PAGE_SLUG ) ); ?>" class="button button-primary"><?php esc_html_e( 'Set up AuditPress', 'auditpress' ); ?></a>
+				<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=auditpress_dismiss_notice' ), 'auditpress_dismiss_notice' ) ); ?>" class="button button-secondary"><?php esc_html_e( 'Dismiss', 'auditpress' ); ?></a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Dismisses the activation notice for good.
+	 *
+	 * @return void
+	 */
+	public function handle_dismiss_notice() {
+		if ( ! current_user_can( $this->capability() ) ) {
+			wp_die( esc_html__( 'You are not allowed to manage AuditPress.', 'auditpress' ) );
+		}
+		check_admin_referer( 'auditpress_dismiss_notice' );
+
+		delete_option( self::OPTION_NOTICE );
+
+		wp_safe_redirect( wp_get_referer() ? wp_get_referer() : admin_url() );
+		exit;
 	}
 
 	/**
@@ -172,6 +253,11 @@ class AuditPress_Settings {
 				<p>
 					<input type="text" readonly id="auditpress-connection-url" class="large-text code" value="<?php echo esc_attr( $connection_url ); ?>" onfocus="this.select();" />
 				</p>
+				<?php if ( '' === (string) get_option( 'permalink_structure', '' ) ) : ?>
+					<p class="description">
+						<?php esc_html_e( 'This site uses plain permalinks, so the URL above carries a query string (?rest_route=). The endpoint works in this form. If your MCP client rejects the URL or mangles the query string, switch Settings → Permalinks to any option other than Plain and copy the URL again.', 'auditpress' ); ?>
+					</p>
+				<?php endif; ?>
 				<p>
 					<button type="button" class="button" id="auditpress-copy-url"><?php esc_html_e( 'Copy URL', 'auditpress' ); ?></button>
 					<span id="auditpress-copy-done" style="display:none;"><?php esc_html_e( 'Copied.', 'auditpress' ); ?></span>
