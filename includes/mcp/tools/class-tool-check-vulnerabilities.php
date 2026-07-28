@@ -25,6 +25,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * like an answer: it says "I looked and found nothing" even when nothing was
  * looked at. Coverage metadata alongside it can be overlooked; a missing field
  * cannot. When no plugin could be checked, the field does not exist.
+ *
+ * Supply-chain audits travel in their own array for the same reason: they are
+ * a claim about the update channel, not about a release, and folding them into
+ * a CVSS-sorted findings list would both mislabel and bury them
+ * (docs/DECISIONS.md 57).
  */
 class AuditPress_Tool_Check_Vulnerabilities {
 
@@ -61,7 +66,7 @@ class AuditPress_Tool_Check_Vulnerabilities {
 	public static function register( $registry ) {
 		$registry->register(
 			'check_vulnerabilities',
-			'Returns known published vulnerabilities that affect the plugin versions actually installed on this WordPress site, plus WordPress core. Each finding carries the affected slug, installed version, CVE identifiers, CVSS score and severity as published, the affected version range, and the fixed-in version where known. A plugin merely appearing in the vulnerability database is not reported; only version matches are. Every response carries a state: complete, complete_stale (answered from cached data past its expiry, labeled with its age), partial (some plugins could not be checked, and they are named), or not_performed (nothing could be checked, and no findings array is returned at all). Findings are ordered by published CVSS score, highest first, and paginated.',
+			'Returns known published vulnerabilities that affect the plugin versions actually installed on this WordPress site, plus WordPress core. Each finding carries the affected slug, installed version, CVE identifiers, CVSS score and severity as published, the affected version range, and the fixed-in version where known. A plugin merely appearing in the vulnerability database is not reported; only version matches are. Supply-chain audits — plugins whose update channel shipped code the author did not write — are returned in a separate supply_chain array with a verdict of malicious, suspicious, or cleaned; they are never merged into findings, because a compromised release is not a CVE. Every response carries a state: complete, complete_stale (answered from cached data past its expiry, labeled with its age), partial (some plugins could not be checked, and they are named), or not_performed (nothing could be checked, and no findings array is returned at all). Findings are ordered by published CVSS score, highest first, and paginated; supply_chain entries are never paginated away.',
 			array(
 				'type'       => 'object',
 				'properties' => array(
@@ -169,10 +174,19 @@ class AuditPress_Tool_Check_Vulnerabilities {
 			'unparsed' => $result['unparsed'],
 		);
 
+		// A separate array, never folded into findings and never truncated. A
+		// supply-chain audit says someone shipped code through this plugin's
+		// update channel that the author did not write; that is a different
+		// claim from "this release has a bug", and sorting it into a
+		// CVSS-ordered list would bury it (it carries no CVSS at all).
+		if ( array() !== $result['supply_chain'] ) {
+			$payload['supply_chain'] = $result['supply_chain'];
+		}
+
 		if ( self::STATE_PARTIAL === $state ) {
 			// Scoped explicitly: these findings describe the checked subset and
 			// say nothing about the rest.
-			$payload['findings_scope'] = 'Findings cover only the checked plugins listed in coverage; the unchecked slugs were not examined.';
+			$payload['findings_scope'] = 'Findings and supply_chain entries cover only the checked plugins listed in coverage; the unchecked slugs were not examined for either.';
 			$payload['reason']         = self::reason( $manager );
 		}
 

@@ -154,6 +154,18 @@ class AuditPress_Tool_Get_Plugin_Details {
 					$detail['vulnerabilities_total']     = count( $findings );
 					$detail['vulnerabilities_truncated'] = true;
 				}
+				// Its own field, never inside vulnerabilities, and never
+				// truncated: a compromised update channel is a different claim
+				// from a vulnerable release (docs/DECISIONS.md 57).
+				$supply_chain = array();
+				foreach ( $vuln_result['supply_chain'] as $entry ) {
+					if ( $entry['slug'] === $slug ) {
+						$supply_chain[] = $entry;
+					}
+				}
+				if ( array() !== $supply_chain ) {
+					$detail['supply_chain'] = $supply_chain;
+				}
 				if ( in_array( $slug, $vuln_result['stale'], true ) ) {
 					$detail['vulnerabilities_data_age'] = array(
 						'fetched_at' => gmdate( 'Y-m-d\TH:i:s\Z', (int) $vuln_result['oldest_fetched_at'] ),

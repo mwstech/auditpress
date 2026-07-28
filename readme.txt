@@ -106,6 +106,18 @@ The endpoint is disabled by default, token-authenticated, rate-limited, and stru
 
 No. It does nothing on normal page loads. Work happens only when your AI client asks a question, and expensive lookups are cached (external data for 12–24 hours, disk scans for a day).
 
+= Why is the first question slow? =
+
+Because the cache is empty and the first call fills it. On a 45-plugin site the first `list_plugins` takes around 8 seconds and about 20 MB, because it looks every plugin up against wordpress.org and the vulnerability database and fetches release-cycle data, all in one request. Every call after that answers from cache in about 0.2 seconds until the data expires.
+
+This is expected behaviour rather than a fault, and it costs your visitors nothing: the work happens inside your client's request, not on a page load. If your MCP client gives up on the first call, ask again — the second one is fast.
+
+= What is the supply_chain section, and how is it different from a vulnerability? =
+
+A vulnerability is a bug in a release. A supply-chain audit is the other kind of problem: someone with publishing rights on the plugin shipped a version the original author did not write, usually after buying or hijacking the plugin.
+
+These are reported separately and never mixed into the CVE list, because they mean different things and carry no CVE or severity score. Verdicts are `malicious` (attacker-supplied code confirmed in the affected versions), `suspicious` (changes consistent with a compromise, unconfirmed), and `cleaned` (compromised, later fixed in a clean release — which says nothing about a site still running an affected version). Where an audit publishes its range as a repository revision rather than a version number, the entry is still reported, marked as undetermined rather than quietly dropped.
+
 = Why doesn't it give my site a score? =
 
 Because scores would be invented. AuditPress reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the model reading them, which can weigh actual context instead of applying a formula.

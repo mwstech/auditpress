@@ -28,8 +28,9 @@ A provider is a class implementing [`AuditPress_Vulnerability_Provider_Interface
 | Method | Returns |
 |---|---|
 | `name()` | Short source name used in `_meta.sources`. |
-| `plugin_findings( $slug_versions )` | Version-matched findings, plus `checked`, `unchecked`, `stale`, `unparsed`, `oldest_fetched_at`. |
+| `plugin_findings( $slug_versions )` | Version-matched findings, `supply_chain` entries kept separate, plus `checked`, `unchecked`, `stale`, `unparsed`, `oldest_fetched_at`. |
 | `has_vulnerability_map( $slug_versions )` | `slug => true|false|null`. `null` means "could not check" and is rendered as `vulnerability_unknown`, never as "clean". |
+| `supply_chain_map( $slug_versions )` | `slug => verdict|'undetermined'|false|null`. Separate from the vulnerability map on purpose. |
 | `core_findings( $wp_version )` | Findings for WordPress core, or `null` when unavailable. |
 
 Register it with the `auditpress_vulnerability_provider` filter:
@@ -54,6 +55,7 @@ Four obligations come with the seam, and a provider that breaks them will produc
 2. **Never guess.** A record you cannot parse counts toward `unparsed`. A bound that is present but unusable is ambiguous, and ambiguous is never "clean".
 3. **Name what you could not check.** Slugs go in `unchecked`, and the caller turns that into `partial` or `not_performed`. Silence reads as "checked and clean".
 4. **Report scores as published.** No invented severities, no normalization across scoring systems.
+5. **Keep supply-chain findings separate.** A compromised update channel is not a CVE. If your source publishes them, return them in `supply_chain` with a verdict, and mark an entry whose range you cannot resolve as `undetermined` rather than dropping it.
 
 Use `AuditPress_Enrichment_Manager` for HTTP and caching: it provides parallel fetching, the persistent store, escalating backoff, stale-while-unavailable, and the per-source status accounting that populates `_meta.sources`.
 
