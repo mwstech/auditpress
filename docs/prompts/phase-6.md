@@ -1,4 +1,4 @@
-# CCD Prompt: PluginLens Phase 6
+# CCD Prompt: AuditPress Phase 6
 
 Usage detection and the deep-dive tool. The last feature phase.
 

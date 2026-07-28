@@ -2,7 +2,7 @@
 /**
  * The analyze_database tool.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,12 +13,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Non-core tables with sizes and owners, plus tables owned by nobody
  * installed.
  */
-class PluginLens_Tool_Analyze_Database {
+class AuditPress_Tool_Analyze_Database {
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @param AuditPress_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -39,14 +39,14 @@ class PluginLens_Tool_Analyze_Database {
 	 * @return string JSON string.
 	 */
 	public static function run() {
-		$inventory = new PluginLens_Inventory_Collector();
+		$inventory = new AuditPress_Inventory_Collector();
 		$slugs     = array();
 		foreach ( $inventory->collect() as $record ) {
 			$slugs[] = $record['slug'];
 		}
-		$attribution = new PluginLens_Attribution( $slugs );
+		$attribution = new AuditPress_Attribution( $slugs );
 
-		$collector = new PluginLens_Database_Collector();
+		$collector = new AuditPress_Database_Collector();
 		$tables    = $collector->collect();
 
 		$attributed = array();
@@ -57,8 +57,8 @@ class PluginLens_Tool_Analyze_Database {
 			$row   = array(
 				'table'       => $table['name'],
 				'rows_approx' => $table['rows_approx'],
-				'data_size'   => PluginLens_Tool_Registry::format_bytes( $table['data_bytes'] ),
-				'index_size'  => PluginLens_Tool_Registry::format_bytes( $table['index_bytes'] ),
+				'data_size'   => AuditPress_Tool_Registry::format_bytes( $table['data_bytes'] ),
+				'index_size'  => AuditPress_Tool_Registry::format_bytes( $table['index_bytes'] ),
 			);
 
 			if ( null !== $owner && $attribution->is_installed( $owner['slug'] ) ) {
@@ -83,6 +83,6 @@ class PluginLens_Tool_Analyze_Database {
 			'scope_note' => 'Only tables using this site\'s WordPress table prefix are visible; plugins creating tables outside the prefix are not listed.',
 		);
 
-		return PluginLens_Tool_Registry::with_meta( $payload, count( $tables ), count( $tables ), false );
+		return AuditPress_Tool_Registry::with_meta( $payload, count( $tables ), count( $tables ), false );
 	}
 }

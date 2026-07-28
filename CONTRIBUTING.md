@@ -1,10 +1,10 @@
-# Contributing to PluginLens
+# Contributing to AuditPress
 
 Thanks for considering it. A few things make contributions land smoothly.
 
 ## The easiest useful contribution: prefix overrides
 
-[`includes/data/prefix-overrides.json`](includes/data/prefix-overrides.json) maps plugin slugs to the option and table prefixes they actually use, for the many cases where no algorithm can derive them (Contact Form 7 uses `wpcf7_`; Google's sitemap plugin uses `sm_`). Every entry moves real bytes out of the "unattributed" bucket for every PluginLens user.
+[`includes/data/prefix-overrides.json`](includes/data/prefix-overrides.json) maps plugin slugs to the option and table prefixes they actually use, for the many cases where no algorithm can derive them (Contact Form 7 uses `wpcf7_`; Google's sitemap plugin uses `sm_`). Every entry moves real bytes out of the "unattributed" bucket for every AuditPress user.
 
 To add one:
 

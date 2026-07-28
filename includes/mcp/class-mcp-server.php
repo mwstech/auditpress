@@ -5,7 +5,7 @@
  * Speaks Streamable HTTP with plain application/json responses (permitted by
  * the MCP spec as the non-SSE variant). Stateless: no session ID is issued.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,11 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers POST /wp-json/pluginlens/v1/mcp/{token} and dispatches JSON-RPC.
+ * Registers POST /wp-json/auditpress/v1/mcp/{token} and dispatches JSON-RPC.
  */
-class PluginLens_MCP_Server {
+class AuditPress_MCP_Server {
 
-	const REST_NAMESPACE = 'pluginlens/v1';
+	const REST_NAMESPACE = 'auditpress/v1';
 
 	/**
 	 * Protocol versions this server supports, newest first. Verified against
@@ -30,24 +30,24 @@ class PluginLens_MCP_Server {
 	/**
 	 * Authentication mechanism.
 	 *
-	 * @var PluginLens_Auth_Interface
+	 * @var AuditPress_Auth_Interface
 	 */
 	private $auth;
 
 	/**
 	 * Tool catalog.
 	 *
-	 * @var PluginLens_Tool_Registry
+	 * @var AuditPress_Tool_Registry
 	 */
 	private $registry;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param PluginLens_Auth_Interface $auth     Authentication mechanism.
-	 * @param PluginLens_Tool_Registry  $registry Tool catalog.
+	 * @param AuditPress_Auth_Interface $auth     Authentication mechanism.
+	 * @param AuditPress_Tool_Registry  $registry Tool catalog.
 	 */
-	public function __construct( PluginLens_Auth_Interface $auth, PluginLens_Tool_Registry $registry ) {
+	public function __construct( AuditPress_Auth_Interface $auth, AuditPress_Tool_Registry $registry ) {
 		$this->auth     = $auth;
 		$this->registry = $registry;
 	}
@@ -105,12 +105,12 @@ class PluginLens_MCP_Server {
 
 		// Rate limiting sits before authentication so failed-token attempts
 		// are throttled too.
-		if ( ! PluginLens_Request_Guard::allow_request() ) {
+		if ( ! AuditPress_Request_Guard::allow_request() ) {
 			return new WP_REST_Response( array( 'error' => 'rate_limited' ), 429 );
 		}
 
 		if ( ! $this->auth->verify( (string) $request->get_param( 'token' ) ) ) {
-			PluginLens_Request_Guard::log_failed_auth();
+			AuditPress_Request_Guard::log_failed_auth();
 			return new WP_REST_Response( array( 'error' => 'unauthorized' ), 401 );
 		}
 
@@ -165,8 +165,8 @@ class PluginLens_MCP_Server {
 			'protocolVersion' => $version,
 			'capabilities'    => array( 'tools' => new stdClass() ),
 			'serverInfo'      => array(
-				'name'    => 'PluginLens',
-				'version' => PLUGINLENS_VERSION,
+				'name'    => 'AuditPress',
+				'version' => AUDITPRESS_VERSION,
 			),
 		);
 	}

@@ -1,31 +1,31 @@
-# CCD Kickoff Prompt: PluginLens Phase 0 (v4)
+# CCD Kickoff Prompt: AuditPress Phase 0 (v4)
 
 Supersedes all earlier versions. LocalWP clone for development, live site for the connector proof.
 
 Prerequisites, all done by Benny before pasting this:
 
 - `docs/SPEC.md` committed to `main`
-- LocalWP site `pluginlens` created, SSL trusted, permalinks set to Post name
+- LocalWP site `auditpress` created, SSL trusted, permalinks set to Post name
 - outsourcewebdesign.com cloned into that Local site and loading correctly
 - Repo cloned into the Local site's plugins directory
-- `ssh pluginlens-test` connects and `wp --info` works
+- `ssh auditpress-test` connects and `wp --info` works
 - Live site pre-flight checks in `ENVIRONMENT-SETUP.md` section 6 have passed
 
 Paste everything below the line into CCD.
 
 ---
 
-You are building PluginLens, a WordPress plugin that turns the site it is installed on into a read-only MCP server. The full specification is at `docs/SPEC.md`. Read it before writing anything.
+You are building AuditPress, a WordPress plugin that turns the site it is installed on into a read-only MCP server. The full specification is at `docs/SPEC.md`. Read it before writing anything.
 
 ## Project coordinates
 
-- Repository: `https://github.com/mwstech/pluginlens.git`
+- Repository: `https://github.com/mwstech/auditpress.git`
 - Default branch: `main`, protected, pull requests only
-- Development site: LocalWP site `pluginlens` at `https://pluginlens.local`, a clone of outsourcewebdesign.com
+- Development site: LocalWP site `auditpress` at `https://pluginlens.local`, a clone of outsourcewebdesign.com
 - The repo is cloned directly into that site's plugins directory, so the repo and the active plugin are the same folder. No sync step for local work.
 - WP-CLI is available through the LocalWP site shell
 - Live site: `https://www.outsourcewebdesign.com`, dormant since 2015, used only to prove the connector works over public HTTPS
-- SSH alias for the live site: `pluginlens-test`
+- SSH alias for the live site: `auditpress-test`
 
 Always use the `www.` form of the live URL. The site canonicalizes to `www.` and a redirect on a POST will drop the request body.
 
@@ -35,7 +35,7 @@ Always use the `www.` form of the live URL. The site canonicalizes to `www.` and
 2. One feature per commit. No chained tasks in a single commit. Commit messages in the form `phase-0: add settings page token generation`.
 3. Read-only against WordPress. This codebase must never contain a call to `activate_plugin`, `deactivate_plugins`, `delete_plugins`, any `*_Upgrader` class, or any `INSERT`, `UPDATE`, `DELETE`, `DROP`, or `ALTER` SQL. The seed and teardown scripts in `tests/` are the sole exception and never ship.
 4. No Composer runtime dependencies. WordPress ships everything needed, and a dependency-free plugin means deploying is one rsync with no build step.
-5. Never ask me for SSH credentials, WP admin passwords, or token values, and never write any of them into a file, a commit, or a log line. The SSH host is configured as `pluginlens-test`. Use that alias and nothing else.
+5. Never ask me for SSH credentials, WP admin passwords, or token values, and never write any of them into a file, a commit, or a log line. The SSH host is configured as `auditpress-test`. Use that alias and nothing else.
 6. **All development happens against the Local clone.** The live site is touched only at step I, only when I ask. Never run the seed script against the live site.
 7. When you make a decision a future agent might reverse, append it to `docs/DECISIONS.md` with the rule and the reason.
 8. If an external API is unreachable during development, mock it and continue. Do not stall waiting for network access.
@@ -52,7 +52,7 @@ Before writing anything, inventory the Local site and report back: total plugins
 ### B. Repository scaffold
 
 1. Create the directory structure defined in section 3 of the spec, minus `.wp-env.json`. Empty placeholder files are fine for anything not built this phase.
-2. `pluginlens.php` with a complete WordPress plugin header. The `Plugin Name` must be exactly `PluginLens` with no descriptive suffix, because the wp.org slug is derived from it. Version 0.1.0. Author `Macronimous Web Solutions`. Author URI `https://www.macronimous.com/`. Plugin URI `https://www.macronimous.com/free-tools/pluginlens/`. License GPLv2 or later with License URI. Text Domain `pluginlens`. Requires at least 6.0. Requires PHP 7.4.
+2. `auditpress.php` with a complete WordPress plugin header. The `Plugin Name` must be exactly `AuditPress` with no descriptive suffix, because the wp.org slug is derived from it. Version 0.1.0. Author `Macronimous Web Solutions`. Author URI `https://www.macronimous.com/`. Plugin URI `https://www.macronimous.com/free-tools/auditpress/`. License GPLv2 or later with License URI. Text Domain `auditpress`. Requires at least 6.0. Requires PHP 7.4.
 3. `composer.json` with `squizlabs/php_codesniffer` and `wp-coding-standards/wpcs` as dev dependencies only.
 4. `phpcs.xml.dist` configured against the `WordPress-Extra` ruleset.
 5. `.gitignore` covering `vendor/`, `node_modules/`, and OS cruft.
@@ -66,7 +66,7 @@ Before writing anything, inventory the Local site and report back: total plugins
 
 ### D. Settings page
 
-1. Admin menu item under Tools, labeled PluginLens. Capability `manage_options`, or `manage_network_options` on multisite.
+1. Admin menu item under Tools, labeled AuditPress. Capability `manage_options`, or `manage_network_options` on multisite.
 2. A master enable toggle for the MCP endpoint. **Default off.** A fresh install must expose nothing.
 3. A "Generate token" action producing 32 bytes from `random_bytes`, hex encoded, stored in a non-autoloaded option.
 4. When enabled and a token exists, display the full connection URL with a copy button.
@@ -75,7 +75,7 @@ Before writing anything, inventory the Local site and report back: total plugins
 
 ### E. Minimal MCP transport
 
-1. Register `POST /wp-json/pluginlens/v1/mcp/{token}` with `permission_callback` returning true. Authenticate inside the handler.
+1. Register `POST /wp-json/auditpress/v1/mcp/{token}` with `permission_callback` returning true. Authenticate inside the handler.
 2. Token comparison with `hash_equals`. Invalid token returns HTTP 401 with a plain JSON body. Endpoint disabled returns HTTP 404.
 3. Implement JSON-RPC 2.0 handling for `initialize`, `notifications/initialized`, `tools/list`, `tools/call`, and `ping`.
 4. `notifications/initialized` returns HTTP 202 with an empty body and no JSON-RPC response object.
@@ -116,7 +116,7 @@ Do not build any collector. Do not make any outbound HTTP call. Do not write `re
 Report back when I can do all of these:
 
 1. I read your survey of the clone and know what test conditions already exist.
-2. I activate the plugin on the Local site and see PluginLens under Tools.
+2. I activate the plugin on the Local site and see AuditPress under Tools.
 3. The endpoint is off, and hitting the URL returns 404.
 4. I toggle it on, generate a token, and copy a connection URL.
 5. I run `tests/mcp-client.php` against the Local URL and see a valid `initialize` response, a tool list containing `get_capabilities`, and a successful tool call.

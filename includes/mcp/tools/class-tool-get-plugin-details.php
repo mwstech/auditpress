@@ -2,7 +2,7 @@
 /**
  * The get_plugin_details tool.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,14 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * collector and enrichment source. The five-slug cap is what keeps this from
  * blowing the context window; it is enforced server-side.
  */
-class PluginLens_Tool_Get_Plugin_Details {
+class AuditPress_Tool_Get_Plugin_Details {
 
 	const MAX_SLUGS = 5;
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @param AuditPress_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -53,7 +53,7 @@ class PluginLens_Tool_Get_Plugin_Details {
 	public static function run( $args ) {
 		$slugs = isset( $args['slugs'] ) && is_array( $args['slugs'] ) ? array_slice( array_map( 'strval', $args['slugs'] ), 0, self::MAX_SLUGS ) : array();
 		if ( array() === $slugs ) {
-			return PluginLens_Tool_Registry::with_meta(
+			return AuditPress_Tool_Registry::with_meta(
 				array( 'error' => 'The slugs argument is required: an array of 1 to 5 plugin slugs.' ),
 				0,
 				0,
@@ -61,7 +61,7 @@ class PluginLens_Tool_Get_Plugin_Details {
 			);
 		}
 
-		$inventory = new PluginLens_Inventory_Collector();
+		$inventory = new AuditPress_Inventory_Collector();
 		$records   = array();
 		$all_slugs = array();
 		foreach ( $inventory->collect() as $record ) {
@@ -71,10 +71,10 @@ class PluginLens_Tool_Get_Plugin_Details {
 			}
 		}
 
-		$manager     = new PluginLens_Enrichment_Manager();
-		$wporg       = new PluginLens_WPOrg_Client( $manager );
-		$vulns       = new PluginLens_WPVulnerability_Client( $manager );
-		$attribution = new PluginLens_Attribution( $all_slugs );
+		$manager     = new AuditPress_Enrichment_Manager();
+		$wporg       = new AuditPress_WPOrg_Client( $manager );
+		$vulns       = new AuditPress_WPVulnerability_Client( $manager );
+		$attribution = new AuditPress_Attribution( $all_slugs );
 
 		$found_slugs   = array_keys( $records );
 		$wporg_map     = $wporg->records( $found_slugs );
@@ -113,7 +113,7 @@ class PluginLens_Tool_Get_Plugin_Details {
 					'update_available' => $record['update_available'],
 					'latest_version'   => $record['latest_version'],
 					'auto_update'      => $record['auto_update'],
-					'disk_size'        => PluginLens_Tool_Registry::format_bytes( $record['disk_size'] ),
+					'disk_size'        => AuditPress_Tool_Registry::format_bytes( $record['disk_size'] ),
 					'file_count'       => $record['file_count'],
 				),
 			);
@@ -158,7 +158,7 @@ class PluginLens_Tool_Get_Plugin_Details {
 			$details[] = $detail;
 		}
 
-		return PluginLens_Tool_Registry::with_meta(
+		return AuditPress_Tool_Registry::with_meta(
 			array( 'plugins' => $details ),
 			count( $details ),
 			count( $details ),
@@ -170,11 +170,11 @@ class PluginLens_Tool_Get_Plugin_Details {
 	/**
 	 * Autoload weight per slug.
 	 *
-	 * @param PluginLens_Attribution $attribution Attribution engine.
+	 * @param AuditPress_Attribution $attribution Attribution engine.
 	 * @return array<string, array>
 	 */
 	private static function autoload_by_slug( $attribution ) {
-		$collector = new PluginLens_Autoload_Collector();
+		$collector = new AuditPress_Autoload_Collector();
 		$totals    = array();
 		foreach ( $collector->collect() as $name => $size ) {
 			$owner = $attribution->attribute( $name, 'option' );
@@ -195,7 +195,7 @@ class PluginLens_Tool_Get_Plugin_Details {
 		$out = array();
 		foreach ( $totals as $slug => $total ) {
 			$out[ $slug ] = array(
-				'size'       => PluginLens_Tool_Registry::format_bytes( $total['bytes'] ),
+				'size'       => AuditPress_Tool_Registry::format_bytes( $total['bytes'] ),
 				'options'    => $total['options'],
 				'confidence' => $total['confidence'],
 			);
@@ -206,11 +206,11 @@ class PluginLens_Tool_Get_Plugin_Details {
 	/**
 	 * Cron events per slug.
 	 *
-	 * @param PluginLens_Attribution $attribution Attribution engine.
+	 * @param AuditPress_Attribution $attribution Attribution engine.
 	 * @return array<string, array[]>
 	 */
 	private static function cron_by_slug( $attribution ) {
-		$collector = new PluginLens_Cron_Collector();
+		$collector = new AuditPress_Cron_Collector();
 		$out       = array();
 		foreach ( $collector->collect() as $event ) {
 			$owner = $attribution->attribute( $event['hook'], 'hook' );
@@ -229,11 +229,11 @@ class PluginLens_Tool_Get_Plugin_Details {
 	/**
 	 * Tables per slug.
 	 *
-	 * @param PluginLens_Attribution $attribution Attribution engine.
+	 * @param AuditPress_Attribution $attribution Attribution engine.
 	 * @return array<string, array[]>
 	 */
 	private static function tables_by_slug( $attribution ) {
-		$collector = new PluginLens_Database_Collector();
+		$collector = new AuditPress_Database_Collector();
 		$out       = array();
 		foreach ( $collector->collect() as $table ) {
 			$owner = $attribution->attribute( $table['stripped_name'], 'table' );
@@ -243,7 +243,7 @@ class PluginLens_Tool_Get_Plugin_Details {
 			$out[ $owner['slug'] ][] = array(
 				'table'       => $table['name'],
 				'rows_approx' => $table['rows_approx'],
-				'data_size'   => PluginLens_Tool_Registry::format_bytes( $table['data_bytes'] ),
+				'data_size'   => AuditPress_Tool_Registry::format_bytes( $table['data_bytes'] ),
 			);
 		}
 		return $out;
@@ -255,7 +255,7 @@ class PluginLens_Tool_Get_Plugin_Details {
 	 * @return array<string, array>
 	 */
 	private static function usage_by_slug() {
-		$collector = new PluginLens_Usage_Collector();
+		$collector = new AuditPress_Usage_Collector();
 		$features  = $collector->features_by_plugin();
 
 		$out = array();

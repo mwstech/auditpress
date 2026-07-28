@@ -2,7 +2,7 @@
 /**
  * The get_capabilities tool.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,18 +14,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Phase 0: content is a hardcoded orientation document; the round trip is
  * what matters.
  */
-class PluginLens_Tool_Get_Capabilities {
+class AuditPress_Tool_Get_Capabilities {
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @param AuditPress_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
 		$registry->register(
 			'get_capabilities',
-			'Describes what this PluginLens server can and cannot answer about the WordPress site it runs on. Call this first to orient yourself.',
+			'Describes what this AuditPress server can and cannot answer about the WordPress site it runs on. Call this first to orient yourself.',
 			array(
 				'type'       => 'object',
 				'properties' => new stdClass(),
@@ -41,8 +41,8 @@ class PluginLens_Tool_Get_Capabilities {
 	 */
 	public static function run() {
 		$capabilities = array(
-			'server'           => 'PluginLens',
-			'version'          => PLUGINLENS_VERSION,
+			'server'           => 'AuditPress',
+			'version'          => AUDITPRESS_VERSION,
 			'read_only'        => true,
 			'description'      => 'A read-only MCP server for inspecting this WordPress site\'s plugin estate. It reports facts, never verdicts; analysis is the client\'s job.',
 			'available_now'    => array(
@@ -83,6 +83,6 @@ class PluginLens_Tool_Get_Capabilities {
 			),
 		);
 
-		return PluginLens_Tool_Registry::with_meta( $capabilities, 1, 1, false );
+		return AuditPress_Tool_Registry::with_meta( $capabilities, 1, 1, false );
 	}
 }

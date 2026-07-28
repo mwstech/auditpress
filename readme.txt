@@ -1,4 +1,4 @@
-=== PluginLens ===
+=== AuditPress ===
 Contributors: macronimous
 Tags: ai, mcp, plugins, audit, security
 Requires at least: 6.0
@@ -14,17 +14,17 @@ Ask your AI assistant real questions about your site's plugins and get answers g
 
 You have questions about your WordPress site that are surprisingly hard to answer. Which of my plugins have known security vulnerabilities *in the version I'm actually running*? Which ones haven't been updated in years? What's slowing down my options table? What did that plugin I deleted in 2019 leave behind in my database? Is anything on this site actually using that shortcode plugin?
 
-PluginLens lets you ask those questions in plain language, in an AI assistant like Claude, and get answers based on the real state of your site — not guesses.
+AuditPress lets you ask those questions in plain language, in an AI assistant like Claude, and get answers based on the real state of your site — not guesses.
 
 It works by turning your site into a small, read-only [MCP](https://modelcontextprotocol.io/) server. MCP (Model Context Protocol) is the open standard AI assistants use to connect to outside data sources. You enable the endpoint, copy one URL into your AI client as a connector, and from then on the assistant can look up facts about your plugin estate whenever you ask: the full plugin inventory, update status, published vulnerabilities matched against your installed versions, wordpress.org health signals, end-of-life status for your PHP and WordPress versions, autoloaded option weight per plugin, cron schedules and orphaned jobs, leftover database tables, and whether registered shortcodes and blocks actually appear in your content.
 
-PluginLens reports facts and never verdicts. It contains no scoring, no grades, and no advice engine — the analysis is your AI assistant's job, which means the quality of the answers improves as AI models improve, without the plugin changing at all.
+AuditPress reports facts and never verdicts. It contains no scoring, no grades, and no advice engine — the analysis is your AI assistant's job, which means the quality of the answers improves as AI models improve, without the plugin changing at all.
 
-**What PluginLens deliberately does not do:** it cannot measure per-plugin runtime cost or front-end asset weight (and says so rather than inventing numbers), and it performs no write operation of any kind.
+**What AuditPress deliberately does not do:** it cannot measure per-plugin runtime cost or front-end asset weight (and says so rather than inventing numbers), and it performs no write operation of any kind.
 
 = The endpoint, stated plainly =
 
-PluginLens exposes information about your site over an authenticated HTTP endpoint. You should understand exactly what that means before enabling it:
+AuditPress exposes information about your site over an authenticated HTTP endpoint. You should understand exactly what that means before enabling it:
 
 * **On install, the endpoint is disabled and inert.** It answers 404 to everything until an administrator explicitly enables it and generates an access token. A fresh install exposes nothing.
 * **When enabled, anyone holding the token URL can read:** your plugin list with names, versions, and health flags; WordPress, PHP, and database versions; vulnerability findings matched to your installed versions; autoloaded option names and sizes; cron hook names and schedules; database table names, sizes, and approximate row counts; and shortcode/block usage counts. Treat the connection URL like a password.
@@ -35,7 +35,7 @@ PluginLens exposes information about your site over an authenticated HTTP endpoi
 
 == External services ==
 
-To enrich its answers, PluginLens contacts three public services. In every case the only data transmitted is plugin slugs and version strings. No site content, no URLs (beyond the API hosts), no user data, and no personal data ever leave your site. All three degrade silently: if a service is unreachable, the affected fields are absent and the response says which source was unavailable.
+To enrich its answers, AuditPress contacts three public services. In every case the only data transmitted is plugin slugs and version strings. No site content, no URLs (beyond the API hosts), no user data, and no personal data ever leave your site. All three degrade silently: if a service is unreachable, the affected fields are absent and the response says which source was unavailable.
 
 **1. WordPress.org Plugin API** (https://api.wordpress.org/)
 Sent: plugin slugs, when you (or your AI client) request plugin health information; cached 24 hours.
@@ -54,12 +54,12 @@ It is an open-source community project: https://github.com/endoflife-date/endofl
 
 = Supporting the data sources =
 
-WPVulnerability is a free, volunteer-run service that this plugin (and the whole WordPress security ecosystem) depends on. If PluginLens is useful to you, consider supporting them: https://www.wpvulnerability.com/sponsorship/
+WPVulnerability is a free, volunteer-run service that this plugin (and the whole WordPress security ecosystem) depends on. If AuditPress is useful to you, consider supporting them: https://www.wpvulnerability.com/sponsorship/
 
 == Installation ==
 
-1. Install and activate PluginLens.
-2. Go to **Tools → PluginLens**.
+1. Install and activate AuditPress.
+2. Go to **Tools → AuditPress**.
 3. Enable the MCP endpoint and generate an access token.
 4. Copy the connection URL and add it to your AI client as a custom connector (in Claude: Settings → Connectors → Add custom connector).
 5. Ask your assistant something real: "Which of my plugins have known vulnerabilities?" or "What did old plugins leave behind in my database?"
@@ -86,7 +86,7 @@ No. It does nothing on normal page loads. Work happens only when your AI client 
 
 = Why doesn't it give my site a score? =
 
-Because scores would be invented. PluginLens reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the AI reading them, which can weigh your actual context instead of applying a formula.
+Because scores would be invented. AuditPress reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the AI reading them, which can weigh your actual context instead of applying a formula.
 
 = Does it work on multisite? =
 
@@ -99,7 +99,7 @@ The affected answers degrade gracefully: the response says exactly which source 
 == Screenshots ==
 
 1. The settings page: enable toggle, connection URL with copy button, and the disclosure of exactly what is exposed.
-2. An AI assistant answering "which of my plugins are vulnerable?" through PluginLens, with version-matched CVE findings.
+2. An AI assistant answering "which of my plugins are vulnerable?" through AuditPress, with version-matched CVE findings.
 3. An AI assistant reconstructing a site's deletion history from orphaned tables, orphaned cron jobs, and leftover autoloaded options.
 
 == Changelog ==

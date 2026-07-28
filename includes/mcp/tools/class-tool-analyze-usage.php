@@ -2,7 +2,7 @@
 /**
  * The analyze_usage tool.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,14 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * content features is unmeasurable this way, not unused
  * (docs/DECISIONS.md 32).
  */
-class PluginLens_Tool_Analyze_Usage {
+class AuditPress_Tool_Analyze_Usage {
 
 	const DEFAULT_MAX_POSTS = 20000;
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param PluginLens_Tool_Registry $registry Tool registry.
+	 * @param AuditPress_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -57,7 +57,7 @@ class PluginLens_Tool_Analyze_Usage {
 		$requested = isset( $args['slugs'] ) && is_array( $args['slugs'] ) ? array_map( 'strval', $args['slugs'] ) : null;
 		$max_posts = isset( $args['max_posts'] ) ? max( 1, (int) $args['max_posts'] ) : self::DEFAULT_MAX_POSTS;
 
-		$collector = new PluginLens_Usage_Collector();
+		$collector = new AuditPress_Usage_Collector();
 		$features  = $collector->features_by_plugin();
 
 		$post_count = $collector->countable_posts();
@@ -148,7 +148,7 @@ class PluginLens_Tool_Analyze_Usage {
 
 		// Plugins with no content features at all: named, with the reason,
 		// never a zero.
-		$inventory      = new PluginLens_Inventory_Collector();
+		$inventory      = new AuditPress_Inventory_Collector();
 		$not_measurable = array();
 		foreach ( $inventory->collect() as $record ) {
 			if ( 'active' !== $record['status'] ) {
@@ -180,6 +180,6 @@ class PluginLens_Tool_Analyze_Usage {
 			$payload['unattributed_features'] = $features['unattributed'];
 		}
 
-		return PluginLens_Tool_Registry::with_meta( $payload, count( $plugins ), count( $plugins ), false );
+		return AuditPress_Tool_Registry::with_meta( $payload, count( $plugins ), count( $plugins ), false );
 	}
 }

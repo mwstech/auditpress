@@ -6,7 +6,7 @@
  * were verified against the live service on 2026-07-27. Returns data or null,
  * never throws. Caches 7 days per product.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Answers "how supported is this version?" for PHP, WordPress, and the
  * database engine.
  */
-class PluginLens_Endoflife_Client implements PluginLens_Enrichment_Client_Interface {
+class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interface {
 
 	const HOST      = 'endoflife.date';
 	const CACHE_TTL = WEEK_IN_SECONDS;
@@ -25,16 +25,16 @@ class PluginLens_Endoflife_Client implements PluginLens_Enrichment_Client_Interf
 	/**
 	 * Shared manager.
 	 *
-	 * @var PluginLens_Enrichment_Manager
+	 * @var AuditPress_Enrichment_Manager
 	 */
 	private $manager;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param PluginLens_Enrichment_Manager $manager Shared manager.
+	 * @param AuditPress_Enrichment_Manager $manager Shared manager.
 	 */
-	public function __construct( PluginLens_Enrichment_Manager $manager ) {
+	public function __construct( AuditPress_Enrichment_Manager $manager ) {
 		$this->manager = $manager;
 	}
 

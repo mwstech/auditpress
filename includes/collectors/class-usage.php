@@ -8,7 +8,7 @@
  * and callers must present that limitation, not bury it
  * (docs/DECISIONS.md 32).
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Collects registered shortcodes, blocks, post types, and taxonomies per
  * plugin, with occurrence counts in post content.
  */
-class PluginLens_Usage_Collector {
+class AuditPress_Usage_Collector {
 
 	/**
 	 * Identifiers counted per query. Bounds query size on sites registering
@@ -42,14 +42,14 @@ class PluginLens_Usage_Collector {
 	private static $taxonomy_files = array();
 
 	/**
-	 * Registers the capture listeners. Gated to PluginLens REST requests so
+	 * Registers the capture listeners. Gated to AuditPress REST requests so
 	 * ordinary site traffic pays nothing for the backtraces.
 	 *
 	 * @return void
 	 */
 	public static function listen() {
 		$uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		if ( false === strpos( $uri, 'pluginlens/v1' ) ) {
+		if ( false === strpos( $uri, 'auditpress/v1' ) ) {
 			return;
 		}
 
@@ -76,13 +76,13 @@ class PluginLens_Usage_Collector {
 	 * @return string
 	 */
 	private static function calling_file() {
-		$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 12 ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Attribution capture on PluginLens requests only, gated in listen().
+		$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 12 ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Attribution capture on AuditPress requests only, gated in listen().
 		foreach ( $trace as $frame ) {
 			if ( ! isset( $frame['file'] ) ) {
 				continue;
 			}
 			$file = wp_normalize_path( $frame['file'] );
-			if ( ! self::is_core_file( $file ) && 0 !== strpos( $file, wp_normalize_path( PLUGINLENS_PLUGIN_DIR ) ) ) {
+			if ( ! self::is_core_file( $file ) && 0 !== strpos( $file, wp_normalize_path( AUDITPRESS_PLUGIN_DIR ) ) ) {
 				return $file;
 			}
 		}
@@ -378,7 +378,7 @@ class PluginLens_Usage_Collector {
 
 		// Second chance through the curated prefix map: the aioseo namespace
 		// belongs to all-in-one-seo-pack, which no slug comparison derives.
-		$attribution = new PluginLens_Attribution( $slugs );
+		$attribution = new AuditPress_Attribution( $slugs );
 		$owner       = $attribution->attribute( str_replace( '-', '_', strtolower( $block_namespace ) ) . '_', 'namespace' );
 		if ( null !== $owner && 'high' === $owner['confidence'] && $attribution->is_installed( $owner['slug'] ) ) {
 			return $owner['slug'];

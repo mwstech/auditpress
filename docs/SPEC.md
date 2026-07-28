@@ -1,4 +1,4 @@
-# PluginLens: Build Specification v1.0
+# AuditPress: Build Specification v1.0
 
 **Product identity:** A WordPress plugin that turns the site it is installed on into a read-only MCP server, so any MCP client (Claude, ChatGPT, Cursor) can inspect and reason about that site's plugin estate.
 
@@ -28,7 +28,7 @@ These are architectural invariants. An agent must not "improve" past them.
 
 ### 2.1 Name and slug
 
-Working name **PluginLens**, slug `pluginlens`. Before anything is written, confirm the slug is free at `https://wordpress.org/plugins/pluginlens/` (a 404 means available). Fallbacks in order: `plugin-lens`, `pluginscope`, `plugin-radar`.
+Working name **AuditPress**, slug `auditpress`. Before anything is written, confirm the slug is free at `https://wordpress.org/plugins/auditpress/` (a 404 means available). Fallbacks in order: `plugin-lens`, `pluginscope`, `plugin-radar`.
 
 The slug decides the text domain, all function prefixes, all option keys, and the SVN path. Changing it later is a full rename. Settle it first.
 
@@ -36,7 +36,7 @@ wp.org rules: the slug and display name may not contain "WordPress" or "WP" as a
 
 ### 2.2 GitHub
 
-1. Create repo `macronimous/pluginlens`. **Private for now**, flip to public at Phase 9 before wp.org submission. A community tool needs a public repo; it does not need one while the auth layer is still a guess.
+1. Create repo `macronimous/auditpress`. **Private for now**, flip to public at Phase 9 before wp.org submission. A community tool needs a public repo; it does not need one while the auth layer is still a guess.
 2. Default branch `main`. Enable branch protection: no direct pushes, PR required. CCD works on feature branches only.
 3. Add `LICENSE` (GPL-2.0-or-later, required by wp.org).
 4. Add topics: `wordpress`, `wordpress-plugin`, `mcp`, `model-context-protocol`.
@@ -78,8 +78,8 @@ None. WPVulnerability and endoflife.date are keyless. wp.org API is keyless. An 
 ## 3. Repository layout
 
 ```
-pluginlens/
-  pluginlens.php              Main plugin file, header, bootstrap
+auditpress/
+  auditpress.php              Main plugin file, header, bootstrap
   uninstall.php               Delete all options and transients
   readme.txt                  wp.org readme (canonical)
   README.md                   GitHub readme
@@ -148,7 +148,7 @@ Tools compose collectors plus enrichment. This separation is what lets a tool wo
 ### 5.1 Endpoint
 
 ```
-POST /wp-json/pluginlens/v1/mcp/{token}
+POST /wp-json/auditpress/v1/mcp/{token}
 ```
 
 Registered with `permission_callback` returning `true`; authentication happens inside the handler so error shapes stay under our control.
@@ -383,7 +383,7 @@ A sixty-plugin site returning full metadata will exhaust the context window and 
 - **External services disclosure section in `readme.txt`.** Mandatory. Must name api.wordpress.org, wpvulnerability.net, and endoflife.date, state exactly what data is sent to each (plugin slugs and version strings, nothing else), state that no site content or personal data leaves the site, and link each service's terms and privacy policy.
 - A second disclosure paragraph stating plainly what the MCP endpoint exposes and that it is disabled until an admin enables it.
 - Text domain identical to the slug. Every user-facing string wrapped in a translation function.
-- Every function, class, option, transient, and hook prefixed `pluginlens_` or `PluginLens_`.
+- Every function, class, option, transient, and hook prefixed `auditpress_` or `AuditPress_`.
 - No minified or obfuscated code. No assets loaded from a CDN. No tracking or analytics of any kind.
 - PHPCS clean against `WordPress-Extra`. PHP 7.4 through 8.4 lint clean.
 - `.wordpress-org/` with `banner-1544x500.png`, `icon-256x256.png`, and screenshots.

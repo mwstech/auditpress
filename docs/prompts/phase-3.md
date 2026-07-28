@@ -1,4 +1,4 @@
-# CCD Prompt: PluginLens Phase 3
+# CCD Prompt: AuditPress Phase 3
 
 Vulnerability matching, and the persistent cache that Phase 4 will depend on.
 
@@ -41,7 +41,7 @@ Cache 12 hours.
 
 Politeness requirements, because this is a free service run by volunteers and the plugin will eventually be installed by strangers:
 
-- Send a `User-Agent` identifying PluginLens and its version.
+- Send a `User-Agent` identifying AuditPress and its version.
 - Parallel fetches capped at a sensible concurrency, not 45 simultaneous connections.
 - Same short timeouts as the endoflife client, with the same silent degradation.
 - Never re-fetch a slug already in cache and unexpired.

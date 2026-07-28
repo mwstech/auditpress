@@ -4,7 +4,7 @@
  *
  * Reads SHOW TABLE STATUS only. Makes no network calls.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Collects non-core table names and sizes.
  */
-class PluginLens_Database_Collector {
+class AuditPress_Database_Collector {
 
 	/**
 	 * Core tables, excluded by explicit allowlist — never by pattern

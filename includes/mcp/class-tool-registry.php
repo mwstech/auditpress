@@ -2,7 +2,7 @@
 /**
  * Tool definitions and dispatch.
  *
- * @package PluginLens
+ * @package AuditPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Holds the MCP tool catalog. Knows nothing about transport or WordPress state.
  */
-class PluginLens_Tool_Registry {
+class AuditPress_Tool_Registry {
 
 	/**
 	 * Registered tools, keyed by name.
@@ -33,7 +33,7 @@ class PluginLens_Tool_Registry {
 		foreach ( glob( trailingslashit( $dir ) . 'class-tool-*.php' ) as $file ) {
 			require_once $file;
 			$stem  = substr( basename( $file, '.php' ), strlen( 'class-' ) );
-			$class = 'PluginLens_' . implode( '_', array_map( 'ucfirst', explode( '-', $stem ) ) );
+			$class = 'AuditPress_' . implode( '_', array_map( 'ucfirst', explode( '-', $stem ) ) );
 			if ( class_exists( $class ) && method_exists( $class, 'register' ) ) {
 				call_user_func( array( $class, 'register' ), $this );
 			}
