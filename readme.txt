@@ -1,5 +1,5 @@
 === AuditPress ===
-Contributors: macronimous
+Contributors: bennyagmailcom
 Tags: ai, mcp, plugins, audit, security
 Requires at least: 6.0
 Tested up to: 7.0
