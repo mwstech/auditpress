@@ -29,4 +29,17 @@ define( 'AUDITPRESS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once AUDITPRESS_PLUGIN_DIR . 'includes/class-plugin.php';
 
+/**
+ * Flags a fresh activation so the admin gets one orienting notice.
+ *
+ * The plugin deliberately does nothing until an administrator enables the
+ * endpoint, which without this notice reads as a broken install.
+ *
+ * @return void
+ */
+function auditpress_on_activation() {
+	add_option( 'auditpress_show_activation_notice', '1', '', false );
+}
+register_activation_hook( __FILE__, 'auditpress_on_activation' );
+
 AuditPress_Plugin::instance();
