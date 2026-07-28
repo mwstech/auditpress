@@ -3,7 +3,7 @@
  * Plugin Name: AuditPress
  * Plugin URI: https://www.macronimous.com/free-tools/auditpress/
  * Description: Turns this site into a read-only MCP server so AI clients can inspect and reason about its plugin estate.
- * Version: 0.1.0
+ * Version: 1.0.0
  * Author: Macronimous Web Solutions
  * Author URI: https://www.macronimous.com/
  * License: GPLv2 or later
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'AUDITPRESS_VERSION', '0.1.0' );
+define( 'AUDITPRESS_VERSION', '1.0.0' );
 define( 'AUDITPRESS_PLUGIN_FILE', __FILE__ );
 define( 'AUDITPRESS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 

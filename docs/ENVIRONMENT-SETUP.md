@@ -61,7 +61,7 @@ LocalWP provides WP-CLI through the site shell, so CCD has everything it needs w
 ```
 rsync -avz --delete \
   --exclude='.git' --exclude='vendor' --exclude='tests' --exclude='docs' \
-  ./ auditpress-test:<plugin-path>/auditpress/
+  ./ pluginlens-test:<plugin-path>/auditpress/
 ```
 
 Excluding `.git`, `vendor`, `tests`, and `docs` keeps the live site clean and mirrors what eventually ships to wp.org.
@@ -77,16 +77,16 @@ Deploy is never automatic. It runs when a phase is complete and the connector ne
 3. Add to `~/.ssh/config`:
 
 ```
-Host auditpress-test
+Host pluginlens-test
     HostName <host>
     Port <port>
     User <username>
     IdentityFile ~/.ssh/id_ed25519
 ```
 
-4. Verify `ssh auditpress-test` connects and `wp --info` works.
+4. Verify `ssh pluginlens-test` connects and `wp --info` works.
 
-**Never paste SSH credentials, WP admin passwords, or generated tokens into a CCD chat, a commit, or a log line.** CCD references the alias `auditpress-test` and nothing else.
+**Never paste SSH credentials, WP admin passwords, or generated tokens into a CCD chat, a commit, or a log line.** CCD references the alias `pluginlens-test` and nothing else.
 
 ---
 

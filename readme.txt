@@ -4,7 +4,7 @@ Tags: ai, mcp, plugins, audit, security
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -130,12 +130,15 @@ The affected answers degrade gracefully: the response says exactly which source 
 
 == Changelog ==
 
-= 0.1.0 =
-* Initial release: nine read-only MCP tools — get_capabilities, list_plugins, get_site_overview, check_vulnerabilities, analyze_autoload, analyze_cron, analyze_database, analyze_usage, get_plugin_details.
-* Enrichment from wordpress.org, WPVulnerability, and endoflife.date with caching, coverage reporting, and progressive backoff.
-* Token authentication, rate limiting, failed-authentication log.
+= 1.0.0 =
+* Initial public release.
+* Nine read-only MCP tools: get_capabilities, list_plugins, get_site_overview, check_vulnerabilities, analyze_autoload, analyze_cron, analyze_database, analyze_usage, get_plugin_details.
+* MCP over JSON-RPC 2.0 on a single Streamable HTTP endpoint, stateless, protocol versions 2025-11-25, 2025-06-18, and 2025-03-26.
+* Enrichment from wordpress.org, WPVulnerability, and endoflife.date: keyless, cached, parallel-fetched, with per-source coverage reporting and progressive backoff on failure.
+* Attribution engine mapping options, tables, and cron hooks to owning plugins with explicit confidence levels and a visible unattributed bucket.
+* Security: endpoint disabled by default, token authentication compared with hash_equals, per-IP rate limiting, failed-authentication log, and a CI gate that fails the build if any write operation is introduced.
 
 == Upgrade Notice ==
 
-= 0.1.0 =
-Initial release.
+= 1.0.0 =
+Initial public release.
