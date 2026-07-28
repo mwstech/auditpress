@@ -18,6 +18,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PluginLens_Autoload_Collector {
 
 	/**
+	 * Maximum autoloaded options examined in one pass.
+	 */
+	const MAX_OPTIONS = 5000;
+
+	/**
 	 * Autoloaded options as name => byte size.
 	 *
 	 * WordPress 6.6 changed the autoload column values; matching both the old
@@ -30,8 +35,15 @@ class PluginLens_Autoload_Collector {
 	public function collect() {
 		global $wpdb;
 
+		// Names and sizes only, never values, and row-capped so a pathological
+		// options table cannot exhaust memory. The cap is far above any real
+		// site; heaviest options come first so a truncated view is still the
+		// useful one.
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Read-only aggregate over option metadata; caching belongs to callers.
-			"SELECT option_name, LENGTH(option_value) AS size FROM {$wpdb->options} WHERE autoload IN ('yes','on','auto','auto-on')",
+			$wpdb->prepare(
+				"SELECT option_name, LENGTH(option_value) AS size FROM {$wpdb->options} WHERE autoload IN ('yes','on','auto','auto-on') ORDER BY LENGTH(option_value) DESC LIMIT %d",
+				self::MAX_OPTIONS
+			),
 			ARRAY_A
 		);
 
@@ -41,18 +53,5 @@ class PluginLens_Autoload_Collector {
 		}
 		arsort( $options );
 		return $options;
-	}
-
-	/**
-	 * The distinct autoload column values actually present, for verification
-	 * and honest reporting about which schema this site runs.
-	 *
-	 * @return string[]
-	 */
-	public function autoload_values_in_use() {
-		global $wpdb;
-
-		$values = $wpdb->get_col( "SELECT DISTINCT autoload FROM {$wpdb->options}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Read-only, tiny.
-		return array_map( 'strval', (array) $values );
 	}
 }

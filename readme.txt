@@ -8,7 +8,7 @@ Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Ask your AI assistant real questions about your site's plugins — which are vulnerable, abandoned, bloated, or unused — and get answers grounded in facts.
+Ask your AI assistant real questions about your site's plugins and get answers grounded in facts, not guesses.
 
 == Description ==
 

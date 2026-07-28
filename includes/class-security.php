@@ -74,15 +74,6 @@ class PluginLens_Token_Auth implements PluginLens_Auth_Interface {
 		delete_option( PluginLens_Request_Guard::OPTION_AUTH_LOG );
 		return $token;
 	}
-
-	/**
-	 * Invalidates the current token without creating a new one.
-	 *
-	 * @return void
-	 */
-	public static function revoke_token() {
-		delete_option( self::OPTION_TOKEN );
-	}
 }
 
 /**
