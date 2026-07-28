@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 interface AuditPress_Enrichment_Client_Interface {
 
 	/**
-	 * Short source name used in _meta.sources_unavailable, e.g. 'endoflife'.
+	 * Short source name used in _meta.sources, e.g. 'endoflife'.
 	 *
 	 * @return string
 	 */

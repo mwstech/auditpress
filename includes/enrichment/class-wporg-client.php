@@ -30,6 +30,16 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 	const CACHE_TTL = DAY_IN_SECONDS;
 
 	/**
+	 * How old a cached wordpress.org record may be and still be served once
+	 * the API is unreachable. Thirty days, an order of magnitude looser than
+	 * the vulnerability limit, because staleness barely matters here: a
+	 * last-updated date, a tested-up-to value, and an install count move on a
+	 * scale of weeks, and a month-old answer to "is this plugin abandoned?" is
+	 * the same answer (docs/DECISIONS.md 53).
+	 */
+	const MAX_STALE = MONTH_IN_SECONDS;
+
+	/**
 	 * Shared manager.
 	 *
 	 * @var AuditPress_Enrichment_Manager
@@ -46,7 +56,7 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 	}
 
 	/**
-	 * Source name for _meta.sources_unavailable.
+	 * Source name for _meta.sources.
 	 *
 	 * @return string
 	 */
@@ -68,17 +78,27 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 	public function records( $slugs ) {
 		$out      = array();
 		$to_fetch = array();
+		$fallback = array();
 
 		foreach ( $slugs as $slug ) {
-			$cached = $this->manager->store_get( 'wporg_' . $slug, self::CACHE_TTL );
-			if ( false !== $cached ) {
-				$out[ $slug ] = $cached['data'];
-				if ( null === $cached['data'] ) {
-					$this->manager->record_unavailable( $this->name() );
-				}
+			$lookup = $this->manager->store_lookup( 'wporg_' . $slug, self::CACHE_TTL, self::MAX_STALE );
+			if ( 'fresh' === $lookup['state'] ) {
+				$out[ $slug ] = $lookup['data'];
+				$this->manager->record_ok( $this->name() );
 				continue;
 			}
-			$to_fetch[] = $slug;
+			if ( 'stale' === $lookup['state'] ) {
+				$out[ $slug ] = $lookup['data'];
+				$this->manager->record_stale( $this->name(), $lookup['fetched_at'] );
+				continue;
+			}
+			if ( 'blocked' === $lookup['state'] ) {
+				$out[ $slug ] = null;
+				$this->manager->record_unavailable( $this->name(), AuditPress_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
+				continue;
+			}
+			$to_fetch[]        = $slug;
+			$fallback[ $slug ] = $lookup;
 		}
 
 		if ( array() === $to_fetch ) {
@@ -86,9 +106,9 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 		}
 
 		if ( $this->manager->is_blocked( self::HOST ) ) {
-			$this->manager->record_unavailable( $this->name() );
+			// Configuration, not failure: no negative cache.
 			foreach ( $to_fetch as $slug ) {
-				$out[ $slug ] = null; // Configuration, not failure: no negative cache.
+				$out[ $slug ] = $this->degrade( $fallback[ $slug ], AuditPress_Enrichment_Manager::REASON_NO_OUTBOUND );
 			}
 			return $out;
 		}
@@ -98,18 +118,45 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 			$urls[ $slug ] = 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=' . rawurlencode( $slug ) . '&request%5Bfields%5D%5Bsections%5D=false';
 		}
 		$responses = $this->manager->fetch_multiple_raw( $urls );
+		$any_ok    = false;
 
 		foreach ( $to_fetch as $slug ) {
 			$answer = $this->interpret( $responses[ $slug ] );
 			if ( null === $answer ) {
-				$this->manager->record_unavailable( $this->name() );
+				$status = null === $responses[ $slug ] ? 0 : (int) $responses[ $slug ]['status'];
+				$this->manager->store_put_failure( 'wporg_' . $slug );
+				$out[ $slug ] = $this->degrade( $fallback[ $slug ], $this->manager->failure_reason( $slug, $status ) );
+				continue;
 			}
 			$this->manager->store_put( 'wporg_' . $slug, $answer );
+			$this->manager->record_ok( $this->name() );
 			$out[ $slug ] = $answer;
+			$any_ok       = true;
+		}
+		if ( $any_ok ) {
+			$this->manager->record_last_success( $this->name() );
 		}
 		$this->manager->store_flush();
 
 		return $out;
+	}
+
+	/**
+	 * Falls back to a stale cached record after a failed fetch, or reports the
+	 * slug unanswered. Either way the reason is recorded against the source.
+	 *
+	 * @param array  $lookup Store lookup that preceded the fetch.
+	 * @param string $reason Reason code for the failure.
+	 * @return array|null
+	 */
+	private function degrade( $lookup, $reason ) {
+		$age = time() - $lookup['fetched_at'];
+		if ( null !== $lookup['data'] && $lookup['fetched_at'] > 0 && $age < self::MAX_STALE ) {
+			$this->manager->record_stale( $this->name(), $lookup['fetched_at'] );
+			return $lookup['data'];
+		}
+		$this->manager->record_unavailable( $this->name(), $reason );
+		return null;
 	}
 
 	/**

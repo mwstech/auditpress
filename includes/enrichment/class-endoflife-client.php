@@ -23,6 +23,14 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 	const CACHE_TTL = WEEK_IN_SECONDS;
 
 	/**
+	 * How old a cached cycle list may be and still be served once the API is
+	 * unreachable. Thirty days: release-cycle and end-of-life dates are
+	 * announced months ahead and almost never move, so a month-old copy gives
+	 * the same answer as a fresh one (docs/DECISIONS.md 53).
+	 */
+	const MAX_STALE = MONTH_IN_SECONDS;
+
+	/**
 	 * Shared manager.
 	 *
 	 * @var AuditPress_Enrichment_Manager
@@ -39,7 +47,7 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 	}
 
 	/**
-	 * Source name for _meta.sources_unavailable.
+	 * Source name for _meta.sources.
 	 *
 	 * @return string
 	 */
@@ -58,14 +66,26 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 	public function support_statuses( $products ) {
 		$statuses = array_fill_keys( array_keys( $products ), null );
 		$to_fetch = array();
+		$fallback = array();
 
 		foreach ( $products as $product => $version ) {
-			$cycles = $this->manager->cache_get( 'eol_' . $product );
-			if ( ! is_array( $cycles ) ) {
-				$to_fetch[ $product ] = $version;
+			$lookup = $this->manager->store_lookup( 'eol_' . $product, self::CACHE_TTL, self::MAX_STALE );
+			if ( 'fresh' === $lookup['state'] ) {
+				$this->manager->record_ok( $this->name() );
+				$statuses[ $product ] = $this->match_cycle( $lookup['data'], $product, $version );
 				continue;
 			}
-			$statuses[ $product ] = $this->match_cycle( $cycles, $product, $version );
+			if ( 'stale' === $lookup['state'] ) {
+				$this->manager->record_stale( $this->name(), $lookup['fetched_at'] );
+				$statuses[ $product ] = $this->match_cycle( $lookup['data'], $product, $version );
+				continue;
+			}
+			if ( 'blocked' === $lookup['state'] ) {
+				$this->manager->record_unavailable( $this->name(), AuditPress_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
+				continue;
+			}
+			$to_fetch[ $product ] = $version;
+			$fallback[ $product ] = $lookup;
 		}
 
 		if ( array() === $to_fetch ) {
@@ -73,7 +93,12 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 		}
 
 		if ( $this->manager->is_blocked( self::HOST ) ) {
-			$this->manager->record_unavailable( $this->name() );
+			foreach ( $to_fetch as $product => $version ) {
+				$cycles = $this->degrade( $fallback[ $product ], AuditPress_Enrichment_Manager::REASON_NO_OUTBOUND );
+				if ( null !== $cycles ) {
+					$statuses[ $product ] = $this->match_cycle( $cycles, $product, $version );
+				}
+			}
 			return $statuses;
 		}
 
@@ -85,6 +110,7 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 			$urls[ $product . '|legacy' ] = 'https://endoflife.date/api/' . rawurlencode( $product ) . '.json';
 		}
 		$bodies = $this->manager->fetch_multiple( $urls );
+		$any_ok = false;
 
 		foreach ( $to_fetch as $product => $version ) {
 			$cycles = $this->parse_v1( $bodies[ $product . '|v1' ] );
@@ -92,14 +118,42 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 				$cycles = $this->parse_legacy( $bodies[ $product . '|legacy' ] );
 			}
 			if ( null === $cycles ) {
-				$this->manager->record_unavailable( $this->name() );
-				continue;
+				$this->manager->store_put_failure( 'eol_' . $product );
+				$cycles = $this->degrade( $fallback[ $product ], $this->manager->failure_reason( $product . '|v1' ) );
+				if ( null === $cycles ) {
+					continue;
+				}
+			} else {
+				$this->manager->store_put( 'eol_' . $product, $cycles );
+				$this->manager->record_ok( $this->name() );
+				$any_ok = true;
 			}
-			$this->manager->cache_set( 'eol_' . $product, $cycles, self::CACHE_TTL );
 			$statuses[ $product ] = $this->match_cycle( $cycles, $product, $version );
 		}
+		if ( $any_ok ) {
+			$this->manager->record_last_success( $this->name() );
+		}
+		$this->manager->store_flush();
 
 		return $statuses;
+	}
+
+	/**
+	 * Falls back to a stale cached cycle list after a failed fetch, or reports
+	 * the product unanswered.
+	 *
+	 * @param array  $lookup Store lookup that preceded the fetch.
+	 * @param string $reason Reason code for the failure.
+	 * @return array[]|null
+	 */
+	private function degrade( $lookup, $reason ) {
+		$age = time() - $lookup['fetched_at'];
+		if ( is_array( $lookup['data'] ) && $lookup['fetched_at'] > 0 && $age < self::MAX_STALE ) {
+			$this->manager->record_stale( $this->name(), $lookup['fetched_at'] );
+			return $lookup['data'];
+		}
+		$this->manager->record_unavailable( $this->name(), $reason );
+		return null;
 	}
 
 	/**
@@ -116,14 +170,23 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 	 */
 	public function cycles( $product ) {
 		$product = strtolower( $product );
-		$cached  = $this->manager->cache_get( 'eol_' . $product );
-		if ( is_array( $cached ) ) {
-			return $cached;
+		$lookup  = $this->manager->store_lookup( 'eol_' . $product, self::CACHE_TTL, self::MAX_STALE );
+
+		if ( 'fresh' === $lookup['state'] ) {
+			$this->manager->record_ok( $this->name() );
+			return $lookup['data'];
+		}
+		if ( 'stale' === $lookup['state'] ) {
+			$this->manager->record_stale( $this->name(), $lookup['fetched_at'] );
+			return $lookup['data'];
+		}
+		if ( 'blocked' === $lookup['state'] ) {
+			$this->manager->record_unavailable( $this->name(), AuditPress_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
+			return null;
 		}
 
 		if ( $this->manager->is_blocked( self::HOST ) ) {
-			$this->manager->record_unavailable( $this->name() );
-			return null;
+			return $this->degrade( $lookup, AuditPress_Enrichment_Manager::REASON_NO_OUTBOUND );
 		}
 
 		$bodies = $this->manager->fetch_multiple(
@@ -138,10 +201,15 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 			$cycles = $this->parse_legacy( $bodies['legacy'] );
 		}
 		if ( null === $cycles ) {
-			$this->manager->record_unavailable( $this->name() );
-			return null;
+			$this->manager->store_put_failure( 'eol_' . $product );
+			$fallback = $this->degrade( $lookup, $this->manager->failure_reason( 'v1' ) );
+			$this->manager->store_flush();
+			return $fallback;
 		}
-		$this->manager->cache_set( 'eol_' . $product, $cycles, self::CACHE_TTL );
+		$this->manager->store_put( 'eol_' . $product, $cycles );
+		$this->manager->record_ok( $this->name() );
+		$this->manager->record_last_success( $this->name() );
+		$this->manager->store_flush();
 		return $cycles;
 	}
 
