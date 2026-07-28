@@ -176,8 +176,16 @@ class AuditPress_Enrichment_Manager {
 		$total_timeout = max( 1, (int) apply_filters( 'auditpress_http_timeout', self::TOTAL_TIMEOUT ) );
 
 		$options = array(
-			'timeout'         => $total_timeout,
-			'connect_timeout' => self::CONNECT_TIMEOUT,
+			'timeout'          => $total_timeout,
+			'connect_timeout'  => self::CONNECT_TIMEOUT,
+			// Requests is used directly for parallel fetching, which means
+			// wp_safe_remote_get()'s SSRF guards do not apply. The three
+			// hosts are hardcoded literals and none of them redirect, so
+			// refusing to follow redirects costs nothing and removes the only
+			// path by which a compromised upstream could point this plugin at
+			// an internal address.
+			'follow_redirects' => false,
+			'verify'           => true,
 		);
 
 		// Batched, not all at once: politeness toward volunteer-run APIs.
