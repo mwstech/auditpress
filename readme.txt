@@ -118,6 +118,10 @@ A vulnerability is a bug in a release. A supply-chain audit is the other kind of
 
 These are reported separately and never mixed into the CVE list, because they mean different things and carry no CVE or severity score. Verdicts are `malicious` (attacker-supplied code confirmed in the affected versions), `suspicious` (changes consistent with a compromise, unconfirmed), and `cleaned` (compromised, later fixed in a clean release — which says nothing about a site still running an affected version). Where an audit publishes its range as a repository revision rather than a version number, the entry is still reported, marked as undetermined rather than quietly dropped.
 
+**These verdicts are WPVulnerability's, not AuditPress's.** They are reproduced exactly as published, identified by audit ID and publication date. AuditPress does not analyse plugin code, reaches no independent conclusion about any plugin or its authors, and neither endorses nor disputes a verdict. It reports that an audit exists, what it says, and whether your installed version falls inside the range it names.
+
+A supply-chain verdict is a serious accusation by a third party about someone else's software. Attribute it to its source, and take any question about a specific verdict — its evidence, its accuracy, or its removal — to WPVulnerability at https://www.wpvulnerability.net/ rather than to us or to the plugin's author.
+
 = Why doesn't it give my site a score? =
 
 Because scores would be invented. AuditPress reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the model reading them, which can weigh actual context instead of applying a formula.
