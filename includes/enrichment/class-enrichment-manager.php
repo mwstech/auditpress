@@ -36,6 +36,13 @@ class PluginLens_Enrichment_Manager {
 	const MAX_CONCURRENCY = 8;
 
 	/**
+	 * Largest enrichment response accepted from any upstream, in bytes.
+	 * Real payloads are kilobytes; anything past this is treated as an
+	 * outage rather than parsed.
+	 */
+	const MAX_RESPONSE_BYTES = 2097152;
+
+	/**
 	 * Persistent store: a single non-autoloaded option holding a keyed map of
 	 * entry => {data, fetched_at}. See docs/DECISIONS.md 22.
 	 */
@@ -190,9 +197,16 @@ class PluginLens_Enrichment_Manager {
 				if ( ! is_object( $response ) || ! isset( $response->status_code, $response->body ) ) {
 					continue; // Exceptions come back as objects without a status.
 				}
+				$body = (string) $response->body;
+				// A compromised or spoofed upstream must not be able to
+				// exhaust memory with an enormous body. Oversized responses
+				// are discarded, which degrades exactly like an outage.
+				if ( strlen( $body ) > self::MAX_RESPONSE_BYTES ) {
+					continue;
+				}
 				$bodies[ $key ] = array(
 					'status' => (int) $response->status_code,
-					'body'   => (string) $response->body,
+					'body'   => $body,
 				);
 			}
 		}

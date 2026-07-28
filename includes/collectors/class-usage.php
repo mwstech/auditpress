@@ -22,6 +22,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PluginLens_Usage_Collector {
 
 	/**
+	 * Identifiers counted per query. Bounds query size on sites registering
+	 * an unusual number of shortcodes or blocks.
+	 */
+	const COUNT_CHUNK = 50;
+
+	/**
 	 * Post type => registering file, captured by the listener.
 	 *
 	 * @var array<string, string>
@@ -235,29 +241,39 @@ class PluginLens_Usage_Collector {
 	private function count_patterns( $identifiers, $pattern_builder ) {
 		global $wpdb;
 
+		$identifiers = array_values( $identifiers );
 		if ( array() === $identifiers ) {
 			return array();
 		}
 
-		$selects = array();
-		$values  = array();
-		foreach ( array_values( $identifiers ) as $i => $identifier ) {
-			$patterns = call_user_func( $pattern_builder, $identifier );
-			$clauses  = array();
-			foreach ( $patterns as $pattern ) {
-				$clauses[] = 'post_content LIKE %s';
-				$values[]  = $pattern;
-			}
-			$selects[] = 'SUM(CASE WHEN ' . implode( ' OR ', $clauses ) . " THEN 1 ELSE 0 END) AS c{$i}";
-		}
-
-		$sql = 'SELECT ' . implode( ', ', $selects ) . " FROM {$wpdb->posts} WHERE post_type != 'revision' AND post_status != 'auto-draft'";
-		$row = $wpdb->get_row( $wpdb->prepare( $sql, $values ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Built above from placeholders only.
-
 		$counts = array();
-		foreach ( array_values( $identifiers ) as $i => $identifier ) {
-			$counts[ $identifier ] = isset( $row[ "c{$i}" ] ) ? (int) $row[ "c{$i}" ] : 0;
+
+		// Chunked so a site registering hundreds of shortcodes cannot build
+		// an unbounded query. Every SELECT fragment below is a fixed literal
+		// with %s placeholders and a loop-index alias; no caller-supplied
+		// value is ever concatenated into SQL.
+		foreach ( array_chunk( $identifiers, self::COUNT_CHUNK ) as $chunk_index => $chunk ) {
+			$selects = array();
+			$values  = array();
+			foreach ( $chunk as $i => $identifier ) {
+				$clauses = array();
+				foreach ( (array) call_user_func( $pattern_builder, $identifier ) as $pattern ) {
+					$clauses[] = 'post_content LIKE %s';
+					$values[]  = $pattern;
+				}
+				$selects[] = 'SUM(CASE WHEN ' . implode( ' OR ', $clauses ) . ' THEN 1 ELSE 0 END) AS c' . (int) $i;
+			}
+
+			$sql = 'SELECT ' . implode( ', ', $selects ) . " FROM {$wpdb->posts} WHERE post_type != 'revision' AND post_status != 'auto-draft'";
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- $sql is assembled from fixed literals and %s placeholders only; all values are bound through prepare().
+			$row = $wpdb->get_row( $wpdb->prepare( $sql, $values ), ARRAY_A );
+
+			foreach ( $chunk as $i => $identifier ) {
+				$counts[ $identifier ] = isset( $row[ 'c' . (int) $i ] ) ? (int) $row[ 'c' . (int) $i ] : 0;
+			}
+			unset( $chunk_index );
 		}
+
 		return $counts;
 	}
 
