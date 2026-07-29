@@ -53,6 +53,23 @@ class AuditPress_MCP_Server {
 	const ERR_UNSUPPORTED_VERSION = -32022;
 
 	/**
+	 * Longest Origin header parsed. A serialized origin is a scheme, a host,
+	 * and maybe a port; the longest legal hostname is 253 characters.
+	 */
+	const MAX_ORIGIN_CHARS = 512;
+
+	/**
+	 * Longest attacker-supplied value echoed back in an error message.
+	 */
+	const MAX_ECHO_CHARS = 64;
+
+	/**
+	 * Longest header value decoded from the Base64 sentinel form. Generous
+	 * against the longest tool name; anything past it cannot match one.
+	 */
+	const MAX_HEADER_VALUE_CHARS = 1024;
+
+	/**
 	 * Freshness hint on cacheable list results, in milliseconds: 24 hours.
 	 * The tool catalog is fixed at build time and changes only when the
 	 * plugin itself is updated, so a long TTL is honest; a day bounds how
@@ -265,7 +282,11 @@ class AuditPress_MCP_Server {
 				400,
 				array(
 					'supported' => array_merge( self::MODERN_VERSIONS, self::PROTOCOL_VERSIONS ),
-					'requested' => $version,
+					// Echoed because the spec's own example does, so a client
+					// can see what the server read — but capped and stripped:
+					// it is attacker-supplied text heading into a model's
+					// context, and a version string is never long.
+					'requested' => $this->safe_echo( $version ),
 				)
 			);
 		}
@@ -354,6 +375,13 @@ class AuditPress_MCP_Server {
 		if ( 0 !== strpos( $value, '=?base64?' ) || '?=' !== substr( $value, -2 ) ) {
 			return $value;
 		}
+		// Cap before decoding, not after. The decoded value is only ever
+		// compared against a tool name, so anything longer than the longest
+		// name cannot match — and decoding a multi-megabyte header to learn
+		// that is work an attacker gets for free.
+		if ( strlen( $value ) > self::MAX_HEADER_VALUE_CHARS ) {
+			return $value;
+		}
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- The MCP Streamable HTTP transport defines this encoding for non-ASCII header values and requires servers to decode before comparing against the body; the result is only ever compared with a tool name, never executed or stored.
 		$decoded = base64_decode( substr( $value, 9, -2 ), true );
 		return false === $decoded ? $value : $decoded;
@@ -387,10 +415,17 @@ class AuditPress_MCP_Server {
 	 * @return WP_REST_Response
 	 */
 	private function tools_call( $id, $params ) {
-		$name = isset( $params['name'] ) ? (string) $params['name'] : '';
+		// Scalars only. A tool name arriving as an array or an object must not
+		// reach a string cast, which warns on an array and throws on an
+		// object — the same discipline the enrichment parser applies before
+		// version_compare() (docs/DECISIONS.md 48).
+		$name = isset( $params['name'] ) && is_scalar( $params['name'] ) ? (string) $params['name'] : '';
 
 		if ( '' === $name || ! $this->registry->has( $name ) ) {
-			return $this->error_response( $id, -32602, 'Unknown tool: ' . $name );
+			// The name is echoed to say which tool was not found, but capped
+			// and stripped of control characters: it is attacker-supplied
+			// text on its way into a model's context.
+			return $this->error_response( $id, -32602, 'Unknown tool: ' . $this->safe_echo( $name ) );
 		}
 
 		$arguments = isset( $params['arguments'] ) && is_array( $params['arguments'] ) ? $params['arguments'] : array();
@@ -475,6 +510,22 @@ class AuditPress_MCP_Server {
 	}
 
 	/**
+	 * Caps and de-fangs an attacker-supplied value before it appears in an
+	 * error message. Control characters go, including the newlines that would
+	 * let a value forge extra lines in a log, and the result is capped.
+	 *
+	 * @param string $value Attacker-supplied value.
+	 * @return string
+	 */
+	private function safe_echo( $value ) {
+		$value = preg_replace( '/[^\P{C}]+/u', '', $value );
+		if ( null === $value ) {
+			return ''; // Invalid UTF-8 made the match fail; echo nothing.
+		}
+		return strlen( $value ) > self::MAX_ECHO_CHARS ? substr( $value, 0, self::MAX_ECHO_CHARS ) . '…' : $value;
+	}
+
+	/**
 	 * Whether the request's Origin, if any, is allowed.
 	 *
 	 * Absent is allowed: MCP clients call server-to-server and send no
@@ -493,16 +544,42 @@ class AuditPress_MCP_Server {
 			return true;
 		}
 
-		/**
-		 * Filters the origins allowed to send browser-borne requests to the
-		 * MCP endpoint. Defaults to the site's own origin.
-		 *
-		 * @param string[] $allowed Allowed origin strings, scheme://host[:port].
-		 */
-		$allowed = apply_filters( 'auditpress_allowed_origins', array( home_url() ) );
+		// Bound the work before parsing. A serialized origin is a scheme, a
+		// host, and maybe a port; nothing legitimate approaches this, and
+		// parsing an unbounded header on an unauthenticated request is free
+		// work for an attacker.
+		if ( strlen( $origin ) > self::MAX_ORIGIN_CHARS ) {
+			return false;
+		}
 
-		foreach ( (array) $allowed as $candidate ) {
-			if ( $this->normalize_origin( $origin ) === $this->normalize_origin( (string) $candidate ) ) {
+		$candidate = $this->parse_origin( $origin );
+		if ( null === $candidate ) {
+			return false; // Not a serialized origin at all, including "null".
+		}
+
+		/**
+		 * Filters the host:port authorities allowed to send browser-borne
+		 * requests to the MCP endpoint. Defaults to this site's own, derived
+		 * from home_url() and site_url().
+		 *
+		 * Values are compared as authorities, not URLs: "example.com:443".
+		 * Anything that does not parse is ignored rather than treated as a
+		 * wildcard.
+		 *
+		 * @param string[] $allowed Allowed host:port authorities.
+		 */
+		$allowed = apply_filters( 'auditpress_allowed_origins', $this->site_authorities() );
+
+		foreach ( (array) $allowed as $entry ) {
+			$entry = strtolower( trim( (string) $entry ) );
+			// A filtered value given as a full URL is accepted too, but only
+			// when it parses; an unparseable entry must never become a
+			// wildcard that matches every unparseable Origin.
+			if ( false !== strpos( $entry, '://' ) ) {
+				$parsed = $this->parse_origin( $entry );
+				$entry  = null === $parsed ? '' : $parsed;
+			}
+			if ( '' !== $entry && $entry === $candidate ) {
 				return true;
 			}
 		}
@@ -510,21 +587,75 @@ class AuditPress_MCP_Server {
 	}
 
 	/**
-	 * Reduces a URL or origin to scheme://host:port for comparison, with
-	 * default ports made explicit so "https://example.com" and
-	 * "https://example.com:443" compare equal. Unparseable values normalize
-	 * to the empty string, which matches nothing.
+	 * Parses a serialized origin to its lowercase host:port authority.
 	 *
-	 * @param string $value Origin or URL.
-	 * @return string
+	 * Strict by design. The Origin header is defined as a scheme, a host, and
+	 * an optional port — nothing else. A value carrying userinfo, a path, a
+	 * query, or a fragment is not something a browser produces, and parsing
+	 * it leniently is how "https://evil.com@example.com" ends up reading as
+	 * example.com. Anything that is not exactly a serialized origin is
+	 * rejected rather than interpreted.
+	 *
+	 * The scheme must be http or https but is not part of the returned
+	 * authority: the host is the boundary a DNS-rebinding attack has to
+	 * cross, and sites behind a TLS-terminating proxy routinely record
+	 * home_url() with a scheme that does not match how browsers reach them.
+	 *
+	 * @param string $value Candidate origin.
+	 * @return string|null Lowercase host:port, or null when not an origin.
 	 */
-	private function normalize_origin( $value ) {
-		$parts = wp_parse_url( strtolower( $value ) );
-		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
-			return '';
+	private function parse_origin( $value ) {
+		$value = strtolower( $value );
+
+		if ( 1 !== preg_match( '#^(https?)://([a-z0-9.\-]+|\[[0-9a-f:]+\])(?::([0-9]{1,5}))?$#', $value, $m ) ) {
+			return null;
 		}
-		$port = isset( $parts['port'] ) ? (int) $parts['port'] : ( 'https' === $parts['scheme'] ? 443 : 80 );
-		return $parts['scheme'] . '://' . $parts['host'] . ':' . $port;
+
+		$host = $m[2];
+		// A trailing dot is the DNS-absolute form of the same name, but
+		// browsers treat it as a distinct origin and never send it. Rejecting
+		// is both the safe direction and the accurate one.
+		if ( '.' === substr( $host, -1 ) ) {
+			return null;
+		}
+
+		if ( isset( $m[3] ) && '' !== $m[3] ) {
+			$port = (int) $m[3];
+			if ( $port < 1 || $port > 65535 ) {
+				return null;
+			}
+		} else {
+			$port = 'https' === $m[1] ? 443 : 80;
+		}
+
+		return $host . ':' . $port;
+	}
+
+	/**
+	 * This site's own authorities, from home_url() and site_url().
+	 *
+	 * A URL without an explicit port contributes both default ports: a site
+	 * recorded as http:// but served over https — a TLS-terminating proxy,
+	 * or a configuration nobody got around to updating — must still accept
+	 * its own browser origin.
+	 *
+	 * @return string[]
+	 */
+	private function site_authorities() {
+		$authorities = array();
+		foreach ( array( home_url(), site_url() ) as $url ) {
+			$parts = wp_parse_url( strtolower( (string) $url ) );
+			if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+				continue;
+			}
+			if ( isset( $parts['port'] ) ) {
+				$authorities[] = $parts['host'] . ':' . (int) $parts['port'];
+				continue;
+			}
+			$authorities[] = $parts['host'] . ':80';
+			$authorities[] = $parts['host'] . ':443';
+		}
+		return array_values( array_unique( $authorities ) );
 	}
 
 	/**
