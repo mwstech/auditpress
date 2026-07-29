@@ -20,12 +20,53 @@ class AuditPress_MCP_Server {
 	const REST_NAMESPACE = 'auditpress/v1';
 
 	/**
-	 * Protocol versions this server supports, newest first. Verified against
-	 * the live MCP specification on 2026-07-27.
+	 * Legacy protocol versions this server supports, newest first: the
+	 * revisions that negotiate through an initialize handshake. Verified
+	 * against the live MCP specification on 2026-07-27.
 	 *
 	 * @var string[]
 	 */
 	const PROTOCOL_VERSIONS = array( '2025-11-25', '2025-06-18', '2025-03-26' );
+
+	/**
+	 * Modern protocol versions: revisions that carry version, identity, and
+	 * capabilities in per-request _meta (spec 2026-07-28 and later). A request
+	 * is served in the era its shape declares; the server holds no state
+	 * about which era a client speaks.
+	 *
+	 * @var string[]
+	 */
+	const MODERN_VERSIONS = array( '2026-07-28' );
+
+	/**
+	 * Reserved _meta keys from the 2026-07-28 revision.
+	 */
+	const META_PROTOCOL_VERSION    = 'io.modelcontextprotocol/protocolVersion';
+	const META_CLIENT_CAPABILITIES = 'io.modelcontextprotocol/clientCapabilities';
+	const META_SERVER_INFO         = 'io.modelcontextprotocol/serverInfo';
+
+	/**
+	 * Spec-defined error codes (2026-07-28), allocated from the sub-range the
+	 * MCP specification reserves.
+	 */
+	const ERR_HEADER_MISMATCH     = -32020;
+	const ERR_UNSUPPORTED_VERSION = -32022;
+
+	/**
+	 * Freshness hint on cacheable list results, in milliseconds: 24 hours.
+	 * The tool catalog is fixed at build time and changes only when the
+	 * plugin itself is updated, so a long TTL is honest; a day bounds how
+	 * long a client can miss a new tool after an update without reconnecting
+	 * (docs/DECISIONS.md 58).
+	 */
+	const LIST_TTL_MS = 86400000;
+
+	/**
+	 * Shared intermediaries must never cache MCP responses from this server:
+	 * the token rides in the URL path, and a cached response is a cached
+	 * secret-addressed answer.
+	 */
+	const LIST_CACHE_SCOPE = 'private';
 
 	/**
 	 * Authentication mechanism.
@@ -132,6 +173,16 @@ class AuditPress_MCP_Server {
 
 		$id     = $message['id'];
 		$params = isset( $message['params'] ) && is_array( $message['params'] ) ? $message['params'] : array();
+		$meta   = isset( $params['_meta'] ) && is_array( $params['_meta'] ) ? $params['_meta'] : array();
+
+		// Era selection, per request, exactly as the 2026-07-28 versioning
+		// page specifies for dual-era servers: a request carrying modern
+		// per-request _meta is served statelessly under the new revision;
+		// anything else is served under the legacy handshake revisions. No
+		// state is held about which era a client spoke last time.
+		if ( array_key_exists( self::META_PROTOCOL_VERSION, $meta ) ) {
+			return $this->handle_modern( $request, $id, $message['method'], $params, $meta );
+		}
 
 		switch ( $message['method'] ) {
 			case 'initialize':
@@ -149,6 +200,153 @@ class AuditPress_MCP_Server {
 			default:
 				return $this->error_response( $id, -32601, 'Method not found' );
 		}
+	}
+
+	/**
+	 * Serves one request under the 2026-07-28 revision.
+	 *
+	 * Validation order: header agreement first (a body and header that
+	 * disagree is a request-smuggling shape and is rejected outright, never
+	 * resolved in favor of either), then required _meta fields, then version
+	 * support, then dispatch.
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @param mixed           $id      JSON-RPC id.
+	 * @param string          $method  JSON-RPC method.
+	 * @param array           $params  Request params.
+	 * @param array           $meta    Request _meta.
+	 * @return WP_REST_Response
+	 */
+	private function handle_modern( $request, $id, $method, $params, $meta ) {
+		$version = is_scalar( $meta[ self::META_PROTOCOL_VERSION ] ) ? (string) $meta[ self::META_PROTOCOL_VERSION ] : '';
+
+		// The MCP-Protocol-Version header MUST be present and MUST match the
+		// _meta value; Mcp-Method MUST be present and match the body method;
+		// Mcp-Name MUST accompany tools/call and match params.name. Missing
+		// and mismatched are the same failure: HeaderMismatch, HTTP 400.
+		$header_version = (string) $request->get_header( 'MCP-Protocol-Version' );
+		if ( $header_version !== $version ) {
+			return $this->error_response( $id, self::ERR_HEADER_MISMATCH, 'Header mismatch: MCP-Protocol-Version header does not match the _meta protocol version.', 400 );
+		}
+
+		$header_method = (string) $request->get_header( 'Mcp-Method' );
+		if ( $header_method !== $method ) {
+			return $this->error_response( $id, self::ERR_HEADER_MISMATCH, 'Header mismatch: Mcp-Method header does not match the request body method.', 400 );
+		}
+
+		if ( 'tools/call' === $method ) {
+			$header_name = $this->decode_header_value( (string) $request->get_header( 'Mcp-Name' ) );
+			$body_name   = isset( $params['name'] ) && is_scalar( $params['name'] ) ? (string) $params['name'] : '';
+			if ( $header_name !== $body_name ) {
+				return $this->error_response( $id, self::ERR_HEADER_MISMATCH, 'Header mismatch: Mcp-Name header does not match the request body tool name.', 400 );
+			}
+		}
+
+		// clientCapabilities is required on every modern request; a request
+		// without it is malformed.
+		if ( ! array_key_exists( self::META_CLIENT_CAPABILITIES, $meta ) ) {
+			return $this->error_response( $id, -32602, 'Invalid params: _meta is missing io.modelcontextprotocol/clientCapabilities.', 400 );
+		}
+
+		if ( ! in_array( $version, self::MODERN_VERSIONS, true ) ) {
+			return $this->error_response(
+				$id,
+				self::ERR_UNSUPPORTED_VERSION,
+				'Unsupported protocol version',
+				400,
+				array(
+					'supported' => array_merge( self::MODERN_VERSIONS, self::PROTOCOL_VERSIONS ),
+					'requested' => $version,
+				)
+			);
+		}
+
+		switch ( $method ) {
+			case 'server/discover':
+				return $this->result_response( $id, $this->discover_result() );
+
+			case 'tools/list':
+				return $this->result_response(
+					$id,
+					$this->modern_result(
+						array(
+							'tools'      => $this->registry->list_tools(),
+							'ttlMs'      => self::LIST_TTL_MS,
+							'cacheScope' => self::LIST_CACHE_SCOPE,
+						)
+					)
+				);
+
+			case 'tools/call':
+				$response = $this->tools_call( $id, $params );
+				$body     = $response->get_data();
+				if ( isset( $body['result'] ) && is_array( $body['result'] ) ) {
+					$body['result'] = $this->modern_result( $body['result'] );
+					$response->set_data( $body );
+				}
+				return $response;
+
+			default:
+				// initialize and ping land here deliberately: the handshake
+				// is retired in this revision and ping was removed from it.
+				// Unknown method on Streamable HTTP is 404 with -32601.
+				return $this->error_response( $id, -32601, 'Method not found', 404 );
+		}
+	}
+
+	/**
+	 * Builds the server/discover result. Its shape is defined fresh in the
+	 * 2026-07-28 revision and does not mirror the old initialize result.
+	 *
+	 * @return array
+	 */
+	private function discover_result() {
+		return $this->modern_result(
+			array(
+				'supportedVersions' => array_merge( self::MODERN_VERSIONS, self::PROTOCOL_VERSIONS ),
+				'capabilities'      => array( 'tools' => new stdClass() ),
+				'instructions'      => 'Read-only MCP server for inspecting this WordPress site\'s plugin estate. Call get_capabilities first to orient yourself; it documents every tool, flag, and degradation behavior.',
+				'ttlMs'             => self::LIST_TTL_MS,
+				'cacheScope'        => self::LIST_CACHE_SCOPE,
+			)
+		);
+	}
+
+	/**
+	 * Stamps the fields the 2026-07-28 revision expects on every result:
+	 * resultType (required) and the server's identity in _meta (SHOULD).
+	 *
+	 * @param array $result Bare result payload.
+	 * @return array
+	 */
+	private function modern_result( $result ) {
+		$result['resultType'] = 'complete';
+
+		$result_meta                           = isset( $result['_meta'] ) && is_array( $result['_meta'] ) ? $result['_meta'] : array();
+		$result_meta[ self::META_SERVER_INFO ] = array(
+			'name'    => 'AuditPress',
+			'version' => AUDITPRESS_VERSION,
+		);
+		$result['_meta']                       = $result_meta;
+
+		return $result;
+	}
+
+	/**
+	 * Decodes the Base64 sentinel format the transport defines for header
+	 * values that cannot ride as plain ASCII (=?base64?...?=). Values not in
+	 * sentinel form pass through untouched. The spec requires decoding before
+	 * comparison against the body.
+	 *
+	 * @param string $value Raw header value.
+	 * @return string
+	 */
+	private function decode_header_value( $value ) {
+		if ( 0 !== strpos( $value, '=?base64?' ) || '?=' !== substr( $value, -2 ) ) {
+			return $value;
+		}
+		$decoded = base64_decode( substr( $value, 9, -2 ), true );
+		return false === $decoded ? $value : $decoded;
 	}
 
 	/**
@@ -211,21 +409,26 @@ class AuditPress_MCP_Server {
 	/**
 	 * Wraps an error in a JSON-RPC envelope.
 	 *
-	 * @param mixed  $id      JSON-RPC id, null when unknowable.
-	 * @param int    $code    JSON-RPC error code.
-	 * @param string $message Error message.
-	 * @param int    $status  HTTP status, 200 for well-formed requests.
+	 * @param mixed      $id      JSON-RPC id, null when unknowable.
+	 * @param int        $code    JSON-RPC error code.
+	 * @param string     $message Error message.
+	 * @param int        $status  HTTP status, 200 for well-formed requests.
+	 * @param array|null $data    Optional error data member.
 	 * @return WP_REST_Response
 	 */
-	private function error_response( $id, $code, $message, $status = 200 ) {
+	private function error_response( $id, $code, $message, $status = 200, $data = null ) {
+		$error = array(
+			'code'    => $code,
+			'message' => $message,
+		);
+		if ( null !== $data ) {
+			$error['data'] = $data;
+		}
 		return new WP_REST_Response(
 			array(
 				'jsonrpc' => '2.0',
 				'id'      => $id,
-				'error'   => array(
-					'code'    => $code,
-					'message' => $message,
-				),
+				'error'   => $error,
 			),
 			$status
 		);

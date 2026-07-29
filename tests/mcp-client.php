@@ -3,11 +3,16 @@
  * CLI harness that speaks raw JSON-RPC to a AuditPress MCP endpoint.
  *
  * Usage:
- *   php tests/mcp-client.php <endpoint-url> [--insecure] [--call <tool> [--args '<json>']]
+ *   php tests/mcp-client.php <endpoint-url> [--insecure] [--modern] [--call <tool> [--args '<json>']]
  *
  * With no --call, runs the standard Phase 0 sequence: initialize,
  * notifications/initialized, tools/list, tools/call get_capabilities, ping.
  * Prints every response and its byte size. Exits non-zero on any failure.
+ *
+ * With --modern, speaks MCP revision 2026-07-28 instead: per-request _meta
+ * and Mcp-* headers, server/discover in place of the retired handshake, and
+ * negative cases for header mismatch, unsupported version, and missing
+ * required _meta.
  *
  * This file never ships to wp.org and never runs inside WordPress.
  *
@@ -28,6 +33,10 @@ if ( null === $options ) {
 $client = new AuditPress_MCP_Client( $options['url'], $options['insecure'] );
 
 $failures = 0;
+
+if ( $options['modern'] ) {
+	exit( auditpress_run_modern_sequence( $client, $options ) );
+}
 
 // 1. initialize.
 $init = $client->request(
@@ -132,15 +141,151 @@ echo $failures . " check(s) failed.\n";
 exit( 1 );
 
 /**
+ * Runs the 2026-07-28 sequence: server/discover, tools/list, tools/call,
+ * then the failure shapes the revision defines.
+ *
+ * @param AuditPress_MCP_Client $client  Client.
+ * @param array                 $options Parsed CLI options.
+ * @return int Exit code.
+ */
+function auditpress_run_modern_sequence( $client, $options ) {
+	$failures = 0;
+
+	if ( null !== $options['call'] ) {
+		$call     = $client->modern_request(
+			'tools/call',
+			array(
+				'name'      => $options['call'],
+				'arguments' => $options['args'],
+			)
+		);
+		$failures = $client->assert_result(
+			$call,
+			'tools/call ' . $options['call'] . ' (modern)',
+			function ( $result ) {
+				return isset( $result['content'][0]['text'] ) && empty( $result['isError'] ) && 'complete' === $result['resultType'];
+			}
+		);
+		echo str_repeat( '-', 60 ) . "\n";
+		echo 0 === $failures ? "All checks passed.\n" : "1 check failed.\n";
+		return 0 === $failures ? 0 : 1;
+	}
+
+	// 1. server/discover: supported versions, capabilities, identity, cache fields.
+	$discover  = $client->modern_request( 'server/discover', null );
+	$failures += $client->assert_result(
+		$discover,
+		'server/discover',
+		function ( $result ) {
+			return isset( $result['supportedVersions'], $result['capabilities']['tools'], $result['ttlMs'], $result['cacheScope'] )
+				&& in_array( '2026-07-28', $result['supportedVersions'], true )
+				&& 'complete' === $result['resultType']
+				&& isset( $result['_meta']['io.modelcontextprotocol/serverInfo']['name'] );
+		}
+	);
+
+	// 2. tools/list: catalog plus the CacheableResult fields.
+	$list      = $client->modern_request( 'tools/list', null );
+	$failures += $client->assert_result(
+		$list,
+		'tools/list (modern)',
+		function ( $result ) {
+			if ( ! isset( $result['ttlMs'], $result['cacheScope'] ) || 'complete' !== $result['resultType'] ) {
+				return false;
+			}
+			foreach ( isset( $result['tools'] ) ? $result['tools'] : array() as $tool ) {
+				if ( isset( $tool['name'] ) && 'get_capabilities' === $tool['name'] ) {
+					return true;
+				}
+			}
+			return false;
+		}
+	);
+
+	// 3. tools/call with matching Mcp-Name header.
+	$call      = $client->modern_request(
+		'tools/call',
+		array(
+			'name'      => 'get_capabilities',
+			'arguments' => new stdClass(),
+		)
+	);
+	$failures += $client->assert_result(
+		$call,
+		'tools/call (modern)',
+		function ( $result ) {
+			return isset( $result['content'][0]['text'] ) && empty( $result['isError'] )
+				&& 'complete' === $result['resultType']
+				&& null !== json_decode( $result['content'][0]['text'], true );
+		}
+	);
+
+	// 4. ping was removed from this revision: unknown method, 404.
+	$ping      = $client->modern_request( 'ping', null );
+	$failures += $client->assert_error( $ping, 'ping rejected (removed)', -32601, 404 );
+
+	// 5. initialize is retired for modern requests: unknown method, 404.
+	$init      = $client->modern_request( 'initialize', null );
+	$failures += $client->assert_error( $init, 'initialize rejected (retired)', -32601, 404 );
+
+	// 6. Mcp-Name header disagreeing with the body: HeaderMismatch, 400.
+	$mismatch  = $client->modern_request(
+		'tools/call',
+		array(
+			'name'      => 'get_capabilities',
+			'arguments' => new stdClass(),
+		),
+		array(),
+		array( 'Mcp-Name' => 'a_different_tool' )
+	);
+	$failures += $client->assert_error( $mismatch, 'Mcp-Name mismatch rejected', -32020, 400 );
+
+	// 7. Missing Mcp-Method header: HeaderMismatch, 400.
+	$missing   = $client->modern_request( 'tools/list', null, array(), array( 'Mcp-Method' => null ) );
+	$failures += $client->assert_error( $missing, 'missing Mcp-Method rejected', -32020, 400 );
+
+	// 8. Header and _meta versions disagreeing: HeaderMismatch, 400.
+	$verhdr    = $client->modern_request( 'tools/list', null, array(), array( 'MCP-Protocol-Version' => '2026-01-01' ) );
+	$failures += $client->assert_error( $verhdr, 'version header mismatch rejected', -32020, 400 );
+
+	// 9. Consistent but unsupported version: UnsupportedProtocolVersion with
+	// the supported list, 400.
+	$unsupported = $client->modern_request(
+		'tools/list',
+		null,
+		array( 'io.modelcontextprotocol/protocolVersion' => '1990-01-01' ),
+		array( 'MCP-Protocol-Version' => '1990-01-01' )
+	);
+	$failures   += $client->assert_error( $unsupported, 'unsupported version rejected', -32022, 400 );
+	if ( ! isset( $unsupported['body']['error']['data']['supported'] ) || ! in_array( '2026-07-28', $unsupported['body']['error']['data']['supported'], true ) ) {
+		$client->report_fail( 'unsupported version lists supported', $unsupported, 'error.data.supported missing 2026-07-28' );
+		++$failures;
+	}
+
+	// 10. Missing required clientCapabilities: Invalid params, 400.
+	$nocaps    = $client->modern_request( 'tools/list', null, array( 'io.modelcontextprotocol/clientCapabilities' => null ) );
+	$failures += $client->assert_error( $nocaps, 'missing clientCapabilities rejected', -32602, 400 );
+
+	echo str_repeat( '-', 60 ) . "\n";
+	if ( 0 === $failures ) {
+		echo "All checks passed.\n";
+		return 0;
+	}
+	echo $failures . " check(s) failed.\n";
+	return 1;
+}
+
+/**
  * Parses CLI arguments.
  *
  * @param string[] $args Arguments after the script name.
- * @return array{url: string, insecure: bool, call: ?string, args: array|stdClass}|null
+ * @return array{url: string, insecure: bool, modern: bool, call: ?string, args: array|stdClass}|null
  */
 function auditpress_client_parse_argv( $args ) {
 	$out = array(
 		'url'      => '',
 		'insecure' => false,
+		'modern'   => false,
 		'call'     => null,
 		'args'     => new stdClass(),
 	);
@@ -150,6 +295,8 @@ function auditpress_client_parse_argv( $args ) {
 		$arg = $args[ $i ];
 		if ( '--insecure' === $arg ) {
 			$out['insecure'] = true;
+		} elseif ( '--modern' === $arg ) {
+			$out['modern'] = true;
 		} elseif ( '--call' === $arg && $i + 1 < $n ) {
 			$out['call'] = $args[ ++$i ];
 		} elseif ( '--args' === $arg && $i + 1 < $n ) {
@@ -257,18 +404,109 @@ class AuditPress_MCP_Client {
 	}
 
 	/**
-	 * POSTs a message to the endpoint.
+	 * Sends a request in the 2026-07-28 shape: _meta on the params, version
+	 * and method mirrored into headers. Overrides exist so the negative cases
+	 * can send precisely malformed requests; null removes a field.
 	 *
-	 * @param array $message JSON-RPC message.
+	 * @param string     $method           JSON-RPC method.
+	 * @param array|null $params           Params, or null for _meta only.
+	 * @param array      $meta_overrides   _meta keys to replace (null value removes).
+	 * @param array      $header_overrides Headers to replace (null value removes).
 	 * @return array{status: int, raw: string, body: ?array}
 	 */
-	private function post( $message ) {
+	public function modern_request( $method, $params, $meta_overrides = array(), $header_overrides = array() ) {
+		$meta = array(
+			'io.modelcontextprotocol/protocolVersion'    => '2026-07-28',
+			'io.modelcontextprotocol/clientInfo'         => array(
+				'name'    => 'auditpress-test-harness',
+				'version' => '0.2.0',
+			),
+			'io.modelcontextprotocol/clientCapabilities' => new stdClass(),
+		);
+		foreach ( $meta_overrides as $key => $value ) {
+			if ( null === $value ) {
+				unset( $meta[ $key ] );
+			} else {
+				$meta[ $key ] = $value;
+			}
+		}
+
+		$params          = null === $params ? array() : $params;
+		$params['_meta'] = $meta;
+
+		$headers = array(
+			'MCP-Protocol-Version' => isset( $meta['io.modelcontextprotocol/protocolVersion'] ) ? $meta['io.modelcontextprotocol/protocolVersion'] : null,
+			'Mcp-Method'           => $method,
+		);
+		if ( 'tools/call' === $method && isset( $params['name'] ) ) {
+			$headers['Mcp-Name'] = $params['name'];
+		}
+		foreach ( $header_overrides as $key => $value ) {
+			if ( null === $value ) {
+				unset( $headers[ $key ] );
+			} else {
+				$headers[ $key ] = $value;
+			}
+		}
+
+		$lines = array();
+		foreach ( $headers as $key => $value ) {
+			if ( null !== $value ) {
+				$lines[] = $key . ': ' . $value;
+			}
+		}
+
+		return $this->post(
+			array(
+				'jsonrpc' => '2.0',
+				'id'      => $this->next_id++,
+				'method'  => $method,
+				'params'  => $params,
+			),
+			$lines
+		);
+	}
+
+	/**
+	 * Checks that a response is the expected JSON-RPC error at the expected
+	 * HTTP status. Prints either way.
+	 *
+	 * @param array  $response Response from a request method.
+	 * @param string $label    Human label.
+	 * @param int    $code     Expected JSON-RPC error code.
+	 * @param int    $status   Expected HTTP status.
+	 * @return int 0 on pass, 1 on fail.
+	 */
+	public function assert_error( $response, $label, $code, $status ) {
+		$ok = $status === $response['status']
+			&& is_array( $response['body'] )
+			&& isset( $response['body']['error']['code'] )
+			&& $code === $response['body']['error']['code'];
+
+		if ( $ok ) {
+			$this->report_pass( $label, $response );
+			return 0;
+		}
+		$this->report_fail( $label, $response, sprintf( 'expected HTTP %d with error code %d', $status, $code ) );
+		return 1;
+	}
+
+	/**
+	 * POSTs a message to the endpoint.
+	 *
+	 * @param array      $message       JSON-RPC message.
+	 * @param array|null $extra_headers Extra header lines, replacing the legacy version header.
+	 * @return array{status: int, raw: string, body: ?array}
+	 */
+	private function post( $message, $extra_headers = null ) {
 		$payload = json_encode( $message );
 		$headers = array(
 			'Content-Type: application/json',
 			'Accept: application/json, text/event-stream',
 		);
-		if ( null !== $this->protocol_version ) {
+		if ( null !== $extra_headers ) {
+			$headers = array_merge( $headers, $extra_headers );
+		} elseif ( null !== $this->protocol_version ) {
 			$headers[] = 'MCP-Protocol-Version: ' . $this->protocol_version;
 		}
 

@@ -88,7 +88,11 @@ Your site must be reachable over HTTPS from the internet for a cloud AI client t
 
 = Which clients and what does the transport look like? =
 
-Any MCP client supporting remote servers over HTTP. Transport is Streamable HTTP with a single `application/json` response (no SSE), JSON-RPC 2.0, stateless — no session ID is issued. Protocol versions `2025-11-25`, `2025-06-18`, and `2025-03-26` are accepted; the client's requested version is echoed when supported. `initialize`, `notifications/initialized` (202, empty body), `tools/list`, `tools/call`, and `ping` are implemented. Most clients cache the tool list, so reconnect after upgrading the plugin.
+Any MCP client supporting remote servers over HTTP. Transport is Streamable HTTP with a single `application/json` response (no SSE), JSON-RPC 2.0, stateless — no session ID is issued and none ever was.
+
+Both MCP protocol generations are supported, decided per request with no server-side state. Clients speaking revision `2026-07-28` send per-request metadata and may call `server/discover`; the server validates the `MCP-Protocol-Version`, `Mcp-Method`, and `Mcp-Name` headers against the request body and rejects disagreement outright. Clients speaking `2025-11-25`, `2025-06-18`, or `2025-03-26` use the `initialize` handshake exactly as before, including `notifications/initialized` (202, empty body) and `ping`. Nothing was dropped; the server was stateless from the first release, so the new revision's model is the one this plugin always had.
+
+Clients on `2026-07-28` receive a 24-hour freshness hint on the tool list, so a tool added by a plugin update appears within a day without reconnecting. Older clients cache the tool list with no expiry signal, so on those, reconnect after upgrading the plugin.
 
 = How does authentication work? =
 
@@ -155,7 +159,7 @@ If a source is unreachable but cached data survives, that data is served and lab
 = 1.0.0 =
 * Initial public release.
 * Nine read-only MCP tools: get_capabilities, list_plugins, get_site_overview, check_vulnerabilities, analyze_autoload, analyze_cron, analyze_database, analyze_usage, get_plugin_details.
-* MCP over JSON-RPC 2.0 on a single Streamable HTTP endpoint, stateless, protocol versions 2025-11-25, 2025-06-18, and 2025-03-26.
+* MCP over JSON-RPC 2.0 on a single Streamable HTTP endpoint, stateless, protocol revisions 2026-07-28 (per-request metadata, `server/discover`) and 2025-11-25 / 2025-06-18 / 2025-03-26 (`initialize` handshake), negotiated per request.
 * Enrichment from wordpress.org, WPVulnerability, and endoflife.date: keyless, cached, parallel-fetched, with per-source coverage reporting and progressive backoff on failure.
 * Explicit degradation: per-source status objects with reason codes, stale-but-labeled data served when an upstream is unreachable, and a four-state vulnerability response that returns no findings list at all when nothing could be checked.
 * Attribution engine mapping options, tables, and cron hooks to owning plugins with explicit confidence levels and a visible unattributed bucket.
