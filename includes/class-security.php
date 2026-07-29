@@ -123,10 +123,19 @@ class AuditPress_Request_Guard {
 			);
 		}
 
+		// Already over the limit inside this window: refuse without writing.
+		// The bucket is recorded and its window is running, so counting past
+		// the limit changes no decision — and the write is the expensive part
+		// of a check that runs before authentication, which is exactly what a
+		// flood would otherwise get for free.
+		if ( $buckets[ $ip_key ]['count'] >= $limit ) {
+			return false;
+		}
+
 		++$buckets[ $ip_key ]['count'];
 		set_transient( self::RATE_TRANSIENT, $buckets, 2 * MINUTE_IN_SECONDS );
 
-		return $buckets[ $ip_key ]['count'] <= $limit;
+		return true;
 	}
 
 	/**

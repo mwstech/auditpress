@@ -90,10 +90,12 @@ class AuditPress_Tool_List_Plugins {
 
 		// Network-derived flags (docs/DECISIONS.md 18): booleans in the flags
 		// array, never numbers. When a source is unavailable its flags are
-		// simply absent, _meta.sources_unavailable says so, and coverage
-		// names the slugs nobody looked at.
+		// simply absent, _meta.sources says why, and coverage names the slugs
+		// nobody looked at. Absent must not read as "no", so a row nobody
+		// could check carries vulnerability_unknown: with neither flag, the
+		// row was checked and is clean (docs/DECISIONS.md 51).
 		$manager       = new AuditPress_Enrichment_Manager();
-		$vuln_client   = new AuditPress_WPVulnerability_Client( $manager );
+		$vuln_client   = AuditPress_Tool_Check_Vulnerabilities::provider( $manager );
 		$wporg_client  = new AuditPress_WPOrg_Client( $manager );
 		$slug_versions = array();
 		foreach ( $records as $record ) {
@@ -101,8 +103,9 @@ class AuditPress_Tool_List_Plugins {
 				$slug_versions[ $record['slug'] ] = $record['version'];
 			}
 		}
-		$vuln_map  = $vuln_client->has_vulnerability_map( $slug_versions );
-		$wporg_map = $wporg_client->records( array_keys( $slug_versions ) );
+		$vuln_map   = $vuln_client->has_vulnerability_map( $slug_versions );
+		$supply_map = $vuln_client->supply_chain_map( $slug_versions );
+		$wporg_map  = $wporg_client->records( array_keys( $slug_versions ) );
 
 		// Release cycles place a tested-up-to value relative to the current
 		// WordPress release without pretending minor-version arithmetic works
@@ -137,9 +140,12 @@ class AuditPress_Tool_List_Plugins {
 
 		$rows = array();
 		foreach ( $page as $record ) {
-			$has_vuln = isset( $vuln_map[ $record['slug'] ] ) ? $vuln_map[ $record['slug'] ] : null;
+			// array_key_exists, not isset: a checked-and-clean slug maps to
+			// false, which isset() would report the same as never checked.
+			$has_vuln = array_key_exists( $record['slug'], $vuln_map ) ? $vuln_map[ $record['slug'] ] : null;
+			$supply   = array_key_exists( $record['slug'], $supply_map ) ? $supply_map[ $record['slug'] ] : null;
 			$wporg    = isset( $wporg_map[ $record['slug'] ] ) ? $wporg_map[ $record['slug'] ] : null;
-			$rows[]   = self::row( $record, $detail, $has_vuln, $wporg, $cycle_index );
+			$rows[]   = self::row( $record, $detail, $has_vuln, $wporg, $cycle_index, $supply );
 		}
 
 		$payload = array(
@@ -156,7 +162,7 @@ class AuditPress_Tool_List_Plugins {
 		) as $source => $map ) {
 			$unchecked = array();
 			foreach ( array_keys( $slug_versions ) as $slug ) {
-				if ( ! isset( $map[ $slug ] ) || null === $map[ $slug ] ) {
+				if ( ! array_key_exists( $slug, $map ) || null === $map[ $slug ] ) {
 					$unchecked[] = $slug;
 				}
 			}
@@ -178,7 +184,7 @@ class AuditPress_Tool_List_Plugins {
 			$total,
 			count( $rows ),
 			( $offset + count( $rows ) ) < $total,
-			$manager->sources_unavailable()
+			$manager->source_status()
 		);
 	}
 
@@ -212,9 +218,10 @@ class AuditPress_Tool_List_Plugins {
 	 * @param bool|null  $has_vuln    Vulnerability presence, null when unknown.
 	 * @param array|null $wporg       wordpress.org answer, null when unknown.
 	 * @param array|null $cycle_index WP release cycle => position map, null when unknown.
+	 * @param mixed      $supply      Supply-chain verdict, false, or null when unknown.
 	 * @return array
 	 */
-	private static function row( $record, $detail, $has_vuln = null, $wporg = null, $cycle_index = null ) {
+	private static function row( $record, $detail, $has_vuln = null, $wporg = null, $cycle_index = null, $supply = null ) {
 		$row = array(
 			'slug'             => $record['slug'],
 			'name'             => $record['name'],
@@ -222,7 +229,7 @@ class AuditPress_Tool_List_Plugins {
 			'status'           => $record['status'],
 			'update_available' => $record['update_available'],
 			'latest_version'   => $record['latest_version'],
-			'flags'            => self::flags( $record, $has_vuln, $wporg, $cycle_index ),
+			'flags'            => self::flags( $record, $has_vuln, $wporg, $cycle_index, $supply ),
 		);
 
 		if ( $detail ) {
@@ -277,13 +284,28 @@ class AuditPress_Tool_List_Plugins {
 	 * @param bool|null  $has_vuln    Vulnerability presence, null when unknown.
 	 * @param array|null $wporg       wordpress.org answer, null when unknown.
 	 * @param array|null $cycle_index WP release cycle => position map.
+	 * @param mixed      $supply      Supply-chain verdict, false, or null when unknown.
 	 * @return string[]
 	 */
-	private static function flags( $record, $has_vuln = null, $wporg = null, $cycle_index = null ) {
+	private static function flags( $record, $has_vuln = null, $wporg = null, $cycle_index = null, $supply = null ) {
 		$flags = array();
 
 		if ( true === $has_vuln ) {
 			$flags[] = 'has_vulnerability';
+		} elseif ( null === $has_vuln && in_array( $record['status'], array( 'active', 'inactive' ), true ) ) {
+			// Nobody looked. Without this the row is indistinguishable from a
+			// row that was checked and came back clean, and the safe-looking
+			// reading is the wrong one. Only for rows that were candidates for
+			// a lookup: mu-plugins and drop-ins have no wp.org identity to look
+			// up at all, and their own flags already say so.
+			$flags[] = 'vulnerability_unknown';
+		}
+
+		// Separate from has_vulnerability on purpose: a hijacked update channel
+		// is not a bug in a release, and one flag covering both would let the
+		// more serious fact hide behind the commoner one.
+		if ( is_string( $supply ) ) {
+			$flags[] = 'undetermined' === $supply ? 'supply_chain_undetermined' : 'supply_chain_' . $supply;
 		}
 
 		if ( null !== $wporg ) {

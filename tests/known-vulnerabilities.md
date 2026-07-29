@@ -64,5 +64,24 @@ php tests/mcp-client.php https://{live-test-site}/wp-json/auditpress/v1/mcp/{tok
   --call check_vulnerabilities
 ```
 
-Trust the result only when `coverage.complete` is `true` and
-`_meta.sources_unavailable` is empty.
+Trust the result only when `state` is `complete` and `_meta.sources.wpvulnerability.status`
+is `ok`. A `complete_stale` state is a real answer from cached data, labeled with its age;
+`partial` and `not_performed` are not answers to this comparison.
+
+## Result of the 2026-07-28 comparison
+
+Run against the live site after the upstream `/plugin/` route recovered, with the
+enrichment cache cleared first. Every row above held:
+
+- `state: complete`, 7 of 7 plugins checked, `unchecked_slugs` empty, `unparsed: 0`.
+- `google-sitemap-generator` 4.1.21: **CVE-2025-64632** reported, `lt 4.1.23`, fixed in
+  4.1.23 — consistent with this file's note that 4.1.22 is still affected. One finding of
+  the four advisories on record for that slug.
+- `all-in-one-seo-pack` 4.7.9: nine findings covering all three ranges named above
+  (`< 4.8.2`, `< 4.9.7.1`, and `≤ 4.9.2` expressed upstream as `lt 4.9.3`), plus six
+  advisories published after this file was written.
+- The four expected-clean plugins reported clean.
+- Core 6.7.5 checked, zero findings.
+
+Cross-checked against an independent reimplementation of the operator semantics run over
+the raw API payloads: identical finding sets for all seven slugs.

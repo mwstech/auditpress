@@ -54,6 +54,7 @@ class AuditPress_Plugin {
 		// Capture CPT/taxonomy registration files; no-op off AuditPress requests.
 		AuditPress_Usage_Collector::listen();
 		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/interface-enrichment-client.php';
+		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/interface-vulnerability-provider.php';
 		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/class-enrichment-manager.php';
 		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/class-endoflife-client.php';
 		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/class-wpvulnerability-client.php';
