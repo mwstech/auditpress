@@ -144,6 +144,15 @@ class AuditPress_MCP_Server {
 			return new WP_REST_Response( array( 'error' => 'not_found' ), 404 );
 		}
 
+		// DNS-rebinding guard, per the transport spec: a present-but-foreign
+		// Origin is rejected with 403 and a JSON-RPC error carrying no id.
+		// An absent Origin MUST pass — MCP clients are server-to-server and
+		// send none; only browsers volunteer this header. Getting that
+		// backwards would break every legitimate install.
+		if ( ! $this->origin_allowed( $request ) ) {
+			return $this->error_response( null, -32600, 'Origin not allowed', 403 );
+		}
+
 		// Rate limiting sits before authentication so failed-token attempts
 		// are throttled too.
 		if ( ! AuditPress_Request_Guard::allow_request() ) {
@@ -463,6 +472,59 @@ class AuditPress_MCP_Server {
 		}
 
 		return $served;
+	}
+
+	/**
+	 * Whether the request's Origin, if any, is allowed.
+	 *
+	 * Absent is allowed: MCP clients call server-to-server and send no
+	 * Origin; the header exists to let browsers announce cross-site requests,
+	 * and it is exactly those — including the "null" opaque origin — that a
+	 * DNS-rebinding attack would arrive under. Present is allowed only for
+	 * this site's own origin, since no browser page on another host has any
+	 * business POSTing here.
+	 *
+	 * @param WP_REST_Request $request Incoming request.
+	 * @return bool
+	 */
+	private function origin_allowed( $request ) {
+		$origin = trim( (string) $request->get_header( 'Origin' ) );
+		if ( '' === $origin ) {
+			return true;
+		}
+
+		/**
+		 * Filters the origins allowed to send browser-borne requests to the
+		 * MCP endpoint. Defaults to the site's own origin.
+		 *
+		 * @param string[] $allowed Allowed origin strings, scheme://host[:port].
+		 */
+		$allowed = apply_filters( 'auditpress_allowed_origins', array( home_url() ) );
+
+		foreach ( (array) $allowed as $candidate ) {
+			if ( $this->normalize_origin( $origin ) === $this->normalize_origin( (string) $candidate ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Reduces a URL or origin to scheme://host:port for comparison, with
+	 * default ports made explicit so "https://example.com" and
+	 * "https://example.com:443" compare equal. Unparseable values normalize
+	 * to the empty string, which matches nothing.
+	 *
+	 * @param string $value Origin or URL.
+	 * @return string
+	 */
+	private function normalize_origin( $value ) {
+		$parts = wp_parse_url( strtolower( $value ) );
+		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+		$port = isset( $parts['port'] ) ? (int) $parts['port'] : ( 'https' === $parts['scheme'] ? 443 : 80 );
+		return $parts['scheme'] . '://' . $parts['host'] . ':' . $port;
 	}
 
 	/**
