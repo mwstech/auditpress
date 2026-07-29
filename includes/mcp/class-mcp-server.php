@@ -345,6 +345,7 @@ class AuditPress_MCP_Server {
 		if ( 0 !== strpos( $value, '=?base64?' ) || '?=' !== substr( $value, -2 ) ) {
 			return $value;
 		}
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- The MCP Streamable HTTP transport defines this encoding for non-ASCII header values and requires servers to decode before comparing against the body; the result is only ever compared with a tool name, never executed or stored.
 		$decoded = base64_decode( substr( $value, 9, -2 ), true );
 		return false === $decoded ? $value : $decoded;
 	}
