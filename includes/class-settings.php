@@ -123,13 +123,78 @@ class AuditPress_Settings {
 	 * @return void
 	 */
 	public function add_menu() {
-		add_management_page(
+		$hook = add_management_page(
 			__( 'AuditPress', 'auditpress' ),
 			__( 'AuditPress', 'auditpress' ),
 			$this->capability(),
 			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
+
+		// Attach the copy-button script to this screen and no other. Hooking
+		// the returned suffix rather than checking inside a global
+		// admin_enqueue_scripts callback means the script cannot leak onto
+		// another admin page even by accident.
+		if ( $hook ) {
+			add_action( 'admin_print_footer_scripts-' . $hook, array( $this, 'enqueue_assets' ) );
+		}
+	}
+
+	/**
+	 * Registers the copy-to-clipboard behaviour for the connection URL.
+	 *
+	 * Printed through wp_add_inline_script() against a registered handle
+	 * rather than as a raw <script> tag: inline tags in admin markup are a
+	 * wordpress.org review finding, and an enqueued script is what lets a
+	 * site's own Content-Security-Policy apply.
+	 *
+	 * @return void
+	 */
+	public function enqueue_assets() {
+		$handle = 'auditpress-admin';
+
+		// No file to load: the handle exists purely to carry the inline
+		// script, which is why it is registered rather than enqueued from a
+		// URL. wp_register_script with a false src is the documented way.
+		wp_register_script( $handle, false, array(), AUDITPRESS_VERSION, true );
+		wp_enqueue_script( $handle );
+		wp_add_inline_script( $handle, $this->copy_script() );
+	}
+
+	/**
+	 * The copy-button script. Plain DOM, no dependencies, and it degrades to
+	 * the readonly field the user can select by hand.
+	 *
+	 * @return string
+	 */
+	private function copy_script() {
+		return <<<'JS'
+( function () {
+	var button = document.getElementById( 'auditpress-copy-url' );
+	if ( ! button ) {
+		return;
+	}
+	button.addEventListener( 'click', function () {
+		var field = document.getElementById( 'auditpress-connection-url' );
+		if ( ! field ) {
+			return;
+		}
+		field.select();
+		var done = function () {
+			var flag = document.getElementById( 'auditpress-copy-done' );
+			if ( flag ) {
+				flag.style.display = 'inline';
+			}
+		};
+		if ( navigator.clipboard && navigator.clipboard.writeText ) {
+			navigator.clipboard.writeText( field.value ).then( done, done );
+		} else {
+			document.execCommand( 'copy' );
+			done();
+		}
+	} );
+}() );
+JS;
 	}
 
 	/**
@@ -284,21 +349,6 @@ class AuditPress_Settings {
 					<button type="button" class="button" id="auditpress-copy-url"><?php esc_html_e( 'Copy URL', 'auditpress' ); ?></button>
 					<span id="auditpress-copy-done" style="display:none;"><?php esc_html_e( 'Copied.', 'auditpress' ); ?></span>
 				</p>
-				<script>
-					document.getElementById( 'auditpress-copy-url' ).addEventListener( 'click', function () {
-						var field = document.getElementById( 'auditpress-connection-url' );
-						field.select();
-						var done = function () {
-							document.getElementById( 'auditpress-copy-done' ).style.display = 'inline';
-						};
-						if ( navigator.clipboard && navigator.clipboard.writeText ) {
-							navigator.clipboard.writeText( field.value ).then( done );
-						} else {
-							document.execCommand( 'copy' );
-							done();
-						}
-					} );
-				</script>
 			<?php elseif ( $has_token ) : ?>
 				<p><?php esc_html_e( 'A token exists but the endpoint is disabled, so no connection URL is shown. Enable the endpoint above.', 'auditpress' ); ?></p>
 			<?php endif; ?>
