@@ -1,4 +1,4 @@
-# CCD Prompt: AuditPress Phase 8.7
+# CCD Prompt: Auditra Phase 8.7
 
 Vulnerability path verification and degradation architecture. The last phase before submission.
 

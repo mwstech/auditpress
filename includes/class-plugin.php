@@ -2,7 +2,7 @@
 /**
  * Plugin bootstrap.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,19 +12,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Wires the plugin together. Nothing here touches WordPress state.
  */
-class AuditPress_Plugin {
+class Auditra_Plugin {
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var AuditPress_Plugin|null
+	 * @var Auditra_Plugin|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Returns the shared instance, booting it on first call.
 	 *
-	 * @return AuditPress_Plugin
+	 * @return Auditra_Plugin
 	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -40,33 +40,33 @@ class AuditPress_Plugin {
 	 * @return void
 	 */
 	private function boot() {
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/class-security.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/mcp/class-tool-registry.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/mcp/class-mcp-server.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/collectors/class-inventory.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/collectors/class-site-context.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/collectors/class-attribution.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/collectors/class-autoload.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/collectors/class-cron.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/collectors/class-database.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/collectors/class-usage.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/class-security.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/mcp/class-tool-registry.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/mcp/class-mcp-server.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/collectors/class-inventory.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/collectors/class-site-context.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/collectors/class-attribution.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/collectors/class-autoload.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/collectors/class-cron.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/collectors/class-database.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/collectors/class-usage.php';
 
-		// Capture CPT/taxonomy registration files; no-op off AuditPress requests.
-		AuditPress_Usage_Collector::listen();
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/interface-enrichment-client.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/interface-vulnerability-provider.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/class-enrichment-manager.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/class-endoflife-client.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/class-wpvulnerability-client.php';
-		require_once AUDITPRESS_PLUGIN_DIR . 'includes/enrichment/class-wporg-client.php';
+		// Capture CPT/taxonomy registration files; no-op off Auditra requests.
+		Auditra_Usage_Collector::listen();
+		require_once AUDITRA_PLUGIN_DIR . 'includes/enrichment/interface-enrichment-client.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/enrichment/interface-vulnerability-provider.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/enrichment/class-enrichment-manager.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/enrichment/class-endoflife-client.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/enrichment/class-wpvulnerability-client.php';
+		require_once AUDITRA_PLUGIN_DIR . 'includes/enrichment/class-wporg-client.php';
 
-		$server = new AuditPress_MCP_Server( new AuditPress_Token_Auth(), $this->build_registry() );
+		$server = new Auditra_MCP_Server( new Auditra_Token_Auth(), $this->build_registry() );
 		add_action( 'rest_api_init', array( $server, 'register_routes' ) );
 		add_filter( 'rest_pre_serve_request', array( $server, 'serve_empty_accepted_response' ), 10, 4 );
 
 		if ( is_admin() ) {
-			require_once AUDITPRESS_PLUGIN_DIR . 'includes/class-settings.php';
-			$settings = new AuditPress_Settings();
+			require_once AUDITRA_PLUGIN_DIR . 'includes/class-settings.php';
+			$settings = new Auditra_Settings();
 			$settings->register();
 		}
 	}
@@ -74,11 +74,11 @@ class AuditPress_Plugin {
 	/**
 	 * Builds the tool registry for this phase.
 	 *
-	 * @return AuditPress_Tool_Registry
+	 * @return Auditra_Tool_Registry
 	 */
 	private function build_registry() {
-		$registry = new AuditPress_Tool_Registry();
-		$registry->load_tools_from( AUDITPRESS_PLUGIN_DIR . 'includes/mcp/tools' );
+		$registry = new Auditra_Tool_Registry();
+		$registry->load_tools_from( AUDITRA_PLUGIN_DIR . 'includes/mcp/tools' );
 		return $registry;
 	}
 }

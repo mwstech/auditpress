@@ -5,7 +5,7 @@
  *
  * Reads the cron array directly. Makes no network calls.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Collects scheduled events with runtime callback presence.
  */
-class AuditPress_Cron_Collector {
+class Auditra_Cron_Collector {
 
 	/**
 	 * Scheduled events, one row per (hook, occurrence).

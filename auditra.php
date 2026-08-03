@@ -1,33 +1,33 @@
 <?php
 /**
- * Plugin Name: AuditPress
- * Plugin URI: https://www.macronimous.com/free-tools/auditpress/
+ * Plugin Name: Auditra
+ * Plugin URI: https://www.macronimous.com/free-tools/auditra/
  * Description: Turns this site into a read-only MCP server so AI clients can inspect and reason about its plugin estate.
  * Version: 1.0.0
  * Author: Macronimous Web Solutions
  * Author URI: https://www.macronimous.com/
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: auditpress
+ * Text Domain: auditra
  * Requires at least: 6.0
  * Requires PHP: 7.4
  *
  * Multisite note: v1 operates on the individual site it runs on and is not
- * network-tested. On multisite, managing AuditPress requires a network admin
+ * network-tested. On multisite, managing Auditra requires a network admin
  * (manage_network_options). See docs/DECISIONS.md 35.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'AUDITPRESS_VERSION', '1.0.0' );
-define( 'AUDITPRESS_PLUGIN_FILE', __FILE__ );
-define( 'AUDITPRESS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'AUDITRA_VERSION', '1.0.0' );
+define( 'AUDITRA_PLUGIN_FILE', __FILE__ );
+define( 'AUDITRA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-require_once AUDITPRESS_PLUGIN_DIR . 'includes/class-plugin.php';
+require_once AUDITRA_PLUGIN_DIR . 'includes/class-plugin.php';
 
 /**
  * Flags a fresh activation so the admin gets one orienting notice.
@@ -37,9 +37,9 @@ require_once AUDITPRESS_PLUGIN_DIR . 'includes/class-plugin.php';
  *
  * @return void
  */
-function auditpress_on_activation() {
-	add_option( 'auditpress_show_activation_notice', '1', '', false );
+function auditra_on_activation() {
+	add_option( 'auditra_show_activation_notice', '1', '', false );
 }
-register_activation_hook( __FILE__, 'auditpress_on_activation' );
+register_activation_hook( __FILE__, 'auditra_on_activation' );
 
-AuditPress_Plugin::instance();
+Auditra_Plugin::instance();

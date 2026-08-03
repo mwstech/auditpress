@@ -17,7 +17,7 @@
     "jetpack": ["jetpack_", "jp_"],
     "limit-login-attempts-reloaded": ["limit_login_", "llar_"],
     "loco-translate": ["loco_"],
-    "auditpress": ["auditpress_"],
+    "auditra": ["auditra_"],
     "query-monitor": ["qm_"],
     "really-simple-ssl": ["rsssl_", "rlrsssl_"],
     "redirection": ["redirection_"],

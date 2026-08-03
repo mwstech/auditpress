@@ -1,0 +1,218 @@
+# Copyright (C) 2026 Macronimous Web Solutions
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Auditra 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/auditra\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-03T05:21:22+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: auditra\n"
+
+#. Plugin Name of the plugin
+#: auditra.php
+#: includes/class-settings.php:127
+#: includes/class-settings.php:128
+#: includes/class-settings.php:270
+msgid "Auditra"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: auditra.php
+msgid "https://www.macronimous.com/free-tools/auditra/"
+msgstr ""
+
+#. Description of the plugin
+#: auditra.php
+msgid "Turns this site into a read-only MCP server so AI clients can inspect and reason about its plugin estate."
+msgstr ""
+
+#. Author of the plugin
+#: auditra.php
+msgid "Macronimous Web Solutions"
+msgstr ""
+
+#. Author URI of the plugin
+#: auditra.php
+msgid "https://www.macronimous.com/"
+msgstr ""
+
+#: includes/class-settings.php:48
+msgid "Settings"
+msgstr ""
+
+#: includes/class-settings.php:81
+msgid "Auditra is installed and doing nothing — by design."
+msgstr ""
+
+#: includes/class-settings.php:84
+msgid "The MCP endpoint is disabled, so the plugin exposes nothing and changes nothing until you enable it and generate a token."
+msgstr ""
+
+#: includes/class-settings.php:87
+msgid "Set up Auditra"
+msgstr ""
+
+#: includes/class-settings.php:88
+msgid "Dismiss"
+msgstr ""
+
+#: includes/class-settings.php:101
+#: includes/class-settings.php:207
+#: includes/class-settings.php:224
+#: includes/class-settings.php:259
+msgid "You are not allowed to manage Auditra."
+msgstr ""
+
+#: includes/class-settings.php:273
+msgid "Settings saved."
+msgstr ""
+
+#: includes/class-settings.php:275
+msgid "A new token was generated. Any previous token stopped working immediately."
+msgstr ""
+
+#: includes/class-settings.php:278
+msgid "Auditra exposes a read-only MCP endpoint so AI clients can inspect this site's plugin estate. The endpoint is off by default and requires a secret token."
+msgstr ""
+
+#: includes/class-settings.php:285
+msgid "MCP endpoint"
+msgstr ""
+
+#: includes/class-settings.php:289
+msgid "Enable the MCP endpoint"
+msgstr ""
+
+#: includes/class-settings.php:291
+msgid "Enabling exposes read-only information about this site to anyone holding the token: the plugin list with versions and health data, WordPress/PHP/database versions, known vulnerabilities matched to installed versions, autoloaded option weight, cron schedules, database table names and sizes, and shortcode/block usage counts. No post content, user data, or credentials are ever exposed, and nothing can be changed through the endpoint. While disabled, the endpoint answers 404 to everything."
+msgstr ""
+
+#: includes/class-settings.php:295
+msgid "Save Changes"
+msgstr ""
+
+#: includes/class-settings.php:300
+msgid "Access token"
+msgstr ""
+
+#: includes/class-settings.php:306
+msgid "A token exists. Revoking and regenerating invalidates the old token immediately: every existing connection (including any Claude or other MCP connector using the old URL) will stop working until it is updated with the new URL."
+msgstr ""
+
+#: includes/class-settings.php:307
+msgid "Revoke and regenerate"
+msgstr ""
+
+#: includes/class-settings.php:309
+msgid "No token exists yet. Generate one to build the connection URL."
+msgstr ""
+
+#: includes/class-settings.php:310
+msgid "Generate token"
+msgstr ""
+
+#: includes/class-settings.php:315
+msgid "Connection URL"
+msgstr ""
+
+#: includes/class-settings.php:316
+msgid "Add this URL to your MCP client (for example, Claude custom connectors). Treat it like a password."
+msgstr ""
+
+#: includes/class-settings.php:333
+msgid "This site is configured with an http:// address, so the URL above has been switched to https:// for you."
+msgstr ""
+
+#: includes/class-settings.php:336
+msgid "Remote MCP clients require HTTPS. If this site redirects http to https, copying the http:// form would appear to fail for a confusing reason: the redirect discards the request body, so the client reports the server as unreachable rather than redirected."
+msgstr ""
+
+#: includes/class-settings.php:339
+msgid "If this site genuinely has no working HTTPS certificate, a remote MCP client cannot connect to it at all until that is fixed."
+msgstr ""
+
+#: includes/class-settings.php:345
+msgid "This site uses plain permalinks, so the URL above carries a query string (?rest_route=). The endpoint works in this form. If your MCP client rejects the URL or mangles the query string, switch Settings → Permalinks to any option other than Plain and copy the URL again."
+msgstr ""
+
+#: includes/class-settings.php:349
+msgid "Copy URL"
+msgstr ""
+
+#: includes/class-settings.php:350
+msgid "Copied."
+msgstr ""
+
+#: includes/class-settings.php:353
+msgid "A token exists but the endpoint is disabled, so no connection URL is shown. Enable the endpoint above."
+msgstr ""
+
+#: includes/class-settings.php:358
+msgid "External services"
+msgstr ""
+
+#: includes/class-settings.php:359
+msgid "To enrich its answers, Auditra contacts three public services. The only data ever sent is plugin slugs and version strings. No site content, no URLs beyond the API hosts, and no personal data leave this site."
+msgstr ""
+
+#: includes/class-settings.php:363
+msgid "Service"
+msgstr ""
+
+#: includes/class-settings.php:364
+msgid "What is sent"
+msgstr ""
+
+#: includes/class-settings.php:365
+msgid "What it answers"
+msgstr ""
+
+#: includes/class-settings.php:371
+msgid "Plugin slugs"
+msgstr ""
+
+#: includes/class-settings.php:372
+msgid "Last updated, tested-up-to, installs, ratings, support activity"
+msgstr ""
+
+#: includes/class-settings.php:376
+msgid "Plugin slugs and the WordPress version"
+msgstr ""
+
+#: includes/class-settings.php:377
+msgid "Published vulnerability records"
+msgstr ""
+
+#: includes/class-settings.php:381
+msgid "Product names only (php, WordPress, mysql, mariadb)"
+msgstr ""
+
+#: includes/class-settings.php:382
+msgid "Support and end-of-life dates"
+msgstr ""
+
+#: includes/class-settings.php:390
+msgid "Failed authentication attempts"
+msgstr ""
+
+#: includes/class-settings.php:391
+msgid "The most recent failed attempts against the endpoint (up to 50, newest first). No token material is ever recorded. The log clears when the token is regenerated."
+msgstr ""
+
+#: includes/class-settings.php:395
+msgid "Time (UTC)"
+msgstr ""
+
+#: includes/class-settings.php:396
+msgid "IP address"
+msgstr ""
+
+#: includes/class-settings.php:397
+msgid "User agent"
+msgstr ""

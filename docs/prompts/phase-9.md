@@ -1,4 +1,4 @@
-# CCD Prompt: AuditPress Phase 9
+# CCD Prompt: Auditra Phase 9
 
 MCP 2026-07-28 support. Dual-spec, backward compatible.
 
@@ -8,7 +8,7 @@ Paste everything below the line into CCD.
 
 MCP spec `2026-07-28` was released on 28 July 2026. Read the specification at `https://modelcontextprotocol.io/specification/2026-07-28` and the changelog at `https://modelcontextprotocol.io/specification/2026-07-28/changelog` before writing anything. Do not work from this brief alone — it summarizes from an announcement post, not the spec.
 
-**The good news first: AuditPress is already stateless.** Phase 0 chose single JSON responses over SSE, issued no session ID, and implemented no server-initiated requests. The spec's headline change moved toward where this plugin already was. The migration cost described in the announcement, which centers on session identifiers, does not apply here.
+**The good news first: Auditra is already stateless.** Phase 0 chose single JSON responses over SSE, issued no session ID, and implemented no server-initiated requests. The spec's headline change moved toward where this plugin already was. The migration cost described in the announcement, which centers on session identifiers, does not apply here.
 
 What follows is additive. Nothing about the architecture changes.
 
@@ -48,7 +48,7 @@ Determine from the spec what a server is required to do with them. At minimum th
 
 `tools/list` responses now carry `ttlMs` and `cacheScope`.
 
-Implement them. Choose a TTL and record the reasoning: AuditPress's tool catalog is fixed at build time and only changes on plugin update, so a long TTL is correct.
+Implement them. Choose a TTL and record the reasoning: Auditra's tool catalog is fixed at build time and only changes on plugin update, so a long TTL is correct.
 
 This also solves a real problem from this build. Every phase that added a tool required disconnecting and reconnecting the client, because tool lists were cached with no invalidation signal. Verify whether the new cache fields make that unnecessary and update the FAQ entry accordingly.
 
@@ -60,7 +60,7 @@ If the spec requires echoing anything back, do that.
 
 ### F. Deprecated features
 
-Confirm AuditPress uses none of the deprecated features: Roots, Sampling, Logging, the legacy HTTP+SSE transport, `Mcp-Session-Id`. State explicitly in your report that each is absent.
+Confirm Auditra uses none of the deprecated features: Roots, Sampling, Logging, the legacy HTTP+SSE transport, `Mcp-Session-Id`. State explicitly in your report that each is absent.
 
 ### G. Documentation
 
@@ -68,7 +68,7 @@ Update the readme FAQ, which currently names accepted protocol versions, and `ge
 
 ## Out of scope
 
-Do not implement MRTR — AuditPress makes no server-initiated requests. Do not implement Tasks, MCP Apps, or any other extension. Do not change authentication; token-in-path sits outside the OAuth flow the spec's auth hardening addresses, and OAuth is not being added in 1.0.
+Do not implement MRTR — Auditra makes no server-initiated requests. Do not implement Tasks, MCP Apps, or any other extension. Do not change authentication; token-in-path sits outside the OAuth flow the spec's auth hardening addresses, and OAuth is not being added in 1.0.
 
 ## Verification checklist
 

@@ -16,7 +16,7 @@
  *   destroys the last good payload, so a multi-day outage degrades to
  *   explicitly labeled old data rather than to nothing.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -27,12 +27,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Orchestrates enrichment clients. One instance per request, shared across
  * clients so unavailability is reported once per source.
  */
-class AuditPress_Enrichment_Manager {
+class Auditra_Enrichment_Manager {
 
 	/**
 	 * A slow third-party API must never make the MCP endpoint appear hung,
 	 * but a populated response is legitimately slower than an empty one.
-	 * Total timeout is filterable via auditpress_http_timeout.
+	 * Total timeout is filterable via auditra_http_timeout.
 	 */
 	const CONNECT_TIMEOUT = 3;
 	const TOTAL_TIMEOUT   = 10;
@@ -54,7 +54,7 @@ class AuditPress_Enrichment_Manager {
 	 * Persistent store: a single non-autoloaded option holding a keyed map of
 	 * entry => {data, fetched_at}. See docs/DECISIONS.md 22.
 	 */
-	const STORE_OPTION = 'auditpress_enrich_store';
+	const STORE_OPTION = 'auditra_enrich_store';
 
 	/**
 	 * Store key prefix for the "this source last answered at" markers.
@@ -317,7 +317,7 @@ class AuditPress_Enrichment_Manager {
 				'type'    => 'GET',
 				'headers' => array(
 					'Accept'     => 'application/json',
-					'User-Agent' => 'AuditPress/' . AUDITPRESS_VERSION . ' (WordPress plugin; https://www.macronimous.com/free-tools/auditpress/)',
+					'User-Agent' => 'Auditra/' . AUDITRA_VERSION . ' (WordPress plugin; https://www.macronimous.com/free-tools/auditra/)',
 				),
 			);
 		}
@@ -331,7 +331,7 @@ class AuditPress_Enrichment_Manager {
 		 *
 		 * @param int $timeout Default 10.
 		 */
-		$total_timeout = max( 1, (int) apply_filters( 'auditpress_http_timeout', self::TOTAL_TIMEOUT ) );
+		$total_timeout = max( 1, (int) apply_filters( 'auditra_http_timeout', self::TOTAL_TIMEOUT ) );
 
 		$options = array(
 			'timeout'          => $total_timeout,

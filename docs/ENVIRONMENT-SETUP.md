@@ -1,10 +1,10 @@
-# AuditPress: Environment Setup
+# Auditra: Environment Setup
 
 Two environments, and the second one only matters once.
 
 | Environment | Job | Frequency |
 |---|---|---|
-| LocalWP site `auditpress`, a clone of outsourcewebdesign.com | CCD's entire build loop | Constant |
+| LocalWP site `auditra`, a clone of outsourcewebdesign.com | CCD's entire build loop | Constant |
 | `https://www.outsourcewebdesign.com` | Proving the Claude Chat connector works over public HTTPS | Once per phase, at most |
 
 The local clone is the important idea here. It carries a decade of genuine accumulated cruft, so it is far better test data than any synthetic seed site, and CCD can break it freely.
@@ -15,9 +15,9 @@ The local clone is the important idea here. It carries a decade of genuine accum
 
 LocalWP runs unlimited sites side by side. The Macronimous 2026 site stays exactly as it is.
 
-1. Create a new site named `auditpress`. PHP 8.2, WordPress default, whichever web server.
+1. Create a new site named `auditra`. PHP 8.2, WordPress default, whichever web server.
 2. Enable the trusted SSL certificate so `https://pluginlens.local` resolves cleanly. The plugin should be exercised over HTTPS from the start, matching how it will actually run.
-3. Set permalinks to Post name. `/wp-json/auditpress/v1/mcp/{token}` will not resolve on plain permalinks and the token-in-path design breaks entirely.
+3. Set permalinks to Post name. `/wp-json/auditra/v1/mcp/{token}` will not resolve on plain permalinks and the token-in-path design breaks entirely.
 
 **Note:** LocalWP's Connect feature only syncs with WP Engine and Flywheel, so there is no live sync to outsourcewebdesign.com. The clone below is a one-time copy, and the two will drift. That is fine. Re-clone if the live site ever changes, which it will not.
 
@@ -44,8 +44,8 @@ After cloning, verify the local site loads and the plugins list matches the live
 Clone the repo directly into the Local site's plugins directory:
 
 ```
-cd ~/Local\ Sites/auditpress/app/public/wp-content/plugins
-git clone https://github.com/mwstech/auditpress.git
+cd ~/Local\ Sites/auditra/app/public/wp-content/plugins
+git clone https://github.com/mwstech/auditra.git
 ```
 
 The repo and the active plugin are then the same directory. No symlink, no sync step, no deploy for local work. CCD edits a file and reloads. Avoid symlinking, which occasionally confuses WordPress path resolution and produces bugs that waste an afternoon.
@@ -61,7 +61,7 @@ LocalWP provides WP-CLI through the site shell, so CCD has everything it needs w
 ```
 rsync -avz --delete \
   --exclude='.git' --exclude='vendor' --exclude='tests' --exclude='docs' \
-  ./ pluginlens-test:<plugin-path>/auditpress/
+  ./ pluginlens-test:<plugin-path>/auditra/
 ```
 
 Excluding `.git`, `vendor`, `tests`, and `docs` keeps the live site clean and mirrors what eventually ships to wp.org.
@@ -106,7 +106,7 @@ curl -i -X POST https://www.outsourcewebdesign.com/wp-json/ \
 
 A 404 or a WordPress REST error object is a pass. The request reached WordPress. A 403, a 406, or an HTML error page means the host firewall blocked it, and that needs a support ticket before the connector will ever work. You have hit exactly this on macronimous.com, where plain curl returns 406 and Bingbot gets 403 on robots.txt, so treat it as likely rather than unlikely.
 
-**Security plugins.** Wordfence, iThemes Security, Sucuri, and All In One WP Security all block REST endpoints by default. Deactivate for the duration or add an exception for the `auditpress/v1` namespace.
+**Security plugins.** Wordfence, iThemes Security, Sucuri, and All In One WP Security all block REST endpoints by default. Deactivate for the duration or add an exception for the `auditra/v1` namespace.
 
 **www canonical.** The site canonicalizes to `www.`. Use the `www.` form in `deploy.sh`, in the test harness, and in the Claude Chat connector URL. A redirect on a POST drops the request body, and the failure looks like a protocol bug rather than a URL problem.
 

@@ -4,7 +4,7 @@
  *
  * Reads WordPress directly. Makes no network calls. Knows nothing about MCP.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,9 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Collects the full plugin inventory as plain PHP arrays.
  */
-class AuditPress_Inventory_Collector {
+class Auditra_Inventory_Collector {
 
-	const DISK_TRANSIENT  = 'auditpress_disk_footprint';
+	const DISK_TRANSIENT  = 'auditra_disk_footprint';
 	const FILE_SCAN_LIMIT = 10000;
 
 	/**

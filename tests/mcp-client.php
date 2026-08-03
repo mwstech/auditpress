@@ -1,6 +1,6 @@
 <?php
 /**
- * CLI harness that speaks raw JSON-RPC to a AuditPress MCP endpoint.
+ * CLI harness that speaks raw JSON-RPC to a Auditra MCP endpoint.
  *
  * Usage:
  *   php tests/mcp-client.php <endpoint-url> [--insecure] [--modern] [--call <tool> [--args '<json>']]
@@ -16,7 +16,7 @@
  *
  * This file never ships to wp.org and never runs inside WordPress.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( PHP_SAPI !== 'cli' ) {
@@ -24,18 +24,18 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit( 1 );
 }
 
-$options = auditpress_client_parse_argv( array_slice( $argv, 1 ) );
+$options = auditra_client_parse_argv( array_slice( $argv, 1 ) );
 if ( null === $options ) {
 	fwrite( STDERR, "Usage: php tests/mcp-client.php <endpoint-url> [--insecure] [--call <tool> [--args '<json>']]\n" );
 	exit( 1 );
 }
 
-$client = new AuditPress_MCP_Client( $options['url'], $options['insecure'] );
+$client = new Auditra_MCP_Client( $options['url'], $options['insecure'] );
 
 $failures = 0;
 
 if ( $options['modern'] ) {
-	exit( auditpress_run_modern_sequence( $client, $options ) );
+	exit( auditra_run_modern_sequence( $client, $options ) );
 }
 
 // 1. initialize.
@@ -45,7 +45,7 @@ $init = $client->request(
 		'protocolVersion' => '2025-11-25',
 		'capabilities'    => new stdClass(),
 		'clientInfo'      => array(
-			'name'    => 'auditpress-test-harness',
+			'name'    => 'auditra-test-harness',
 			'version' => '0.1.0',
 		),
 	)
@@ -144,11 +144,11 @@ exit( 1 );
  * Runs the 2026-07-28 sequence: server/discover, tools/list, tools/call,
  * then the failure shapes the revision defines.
  *
- * @param AuditPress_MCP_Client $client  Client.
+ * @param Auditra_MCP_Client $client  Client.
  * @param array                 $options Parsed CLI options.
  * @return int Exit code.
  */
-function auditpress_run_modern_sequence( $client, $options ) {
+function auditra_run_modern_sequence( $client, $options ) {
 	$failures = 0;
 
 	if ( null !== $options['call'] ) {
@@ -281,7 +281,7 @@ function auditpress_run_modern_sequence( $client, $options ) {
  * @param string[] $args Arguments after the script name.
  * @return array{url: string, insecure: bool, modern: bool, call: ?string, args: array|stdClass}|null
  */
-function auditpress_client_parse_argv( $args ) {
+function auditra_client_parse_argv( $args ) {
 	$out = array(
 		'url'      => '',
 		'insecure' => false,
@@ -318,7 +318,7 @@ function auditpress_client_parse_argv( $args ) {
 /**
  * Minimal JSON-RPC-over-HTTP client for the MCP endpoint.
  */
-class AuditPress_MCP_Client {
+class Auditra_MCP_Client {
 
 	/**
 	 * Endpoint URL.
@@ -418,7 +418,7 @@ class AuditPress_MCP_Client {
 		$meta = array(
 			'io.modelcontextprotocol/protocolVersion'    => '2026-07-28',
 			'io.modelcontextprotocol/clientInfo'         => array(
-				'name'    => 'auditpress-test-harness',
+				'name'    => 'auditra-test-harness',
 				'version' => '0.2.0',
 			),
 			'io.modelcontextprotocol/clientCapabilities' => new stdClass(),

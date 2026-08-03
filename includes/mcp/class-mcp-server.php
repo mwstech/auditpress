@@ -5,7 +5,7 @@
  * Speaks Streamable HTTP with plain application/json responses (permitted by
  * the MCP spec as the non-SSE variant). Stateless: no session ID is issued.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,11 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers POST /wp-json/auditpress/v1/mcp/{token} and dispatches JSON-RPC.
+ * Registers POST /wp-json/auditra/v1/mcp/{token} and dispatches JSON-RPC.
  */
-class AuditPress_MCP_Server {
+class Auditra_MCP_Server {
 
-	const REST_NAMESPACE = 'auditpress/v1';
+	const REST_NAMESPACE = 'auditra/v1';
 
 	/**
 	 * Legacy protocol versions this server supports, newest first: the
@@ -88,24 +88,24 @@ class AuditPress_MCP_Server {
 	/**
 	 * Authentication mechanism.
 	 *
-	 * @var AuditPress_Auth_Interface
+	 * @var Auditra_Auth_Interface
 	 */
 	private $auth;
 
 	/**
 	 * Tool catalog.
 	 *
-	 * @var AuditPress_Tool_Registry
+	 * @var Auditra_Tool_Registry
 	 */
 	private $registry;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditPress_Auth_Interface $auth     Authentication mechanism.
-	 * @param AuditPress_Tool_Registry  $registry Tool catalog.
+	 * @param Auditra_Auth_Interface $auth     Authentication mechanism.
+	 * @param Auditra_Tool_Registry  $registry Tool catalog.
 	 */
-	public function __construct( AuditPress_Auth_Interface $auth, AuditPress_Tool_Registry $registry ) {
+	public function __construct( Auditra_Auth_Interface $auth, Auditra_Tool_Registry $registry ) {
 		$this->auth     = $auth;
 		$this->registry = $registry;
 	}
@@ -172,12 +172,12 @@ class AuditPress_MCP_Server {
 
 		// Rate limiting sits before authentication so failed-token attempts
 		// are throttled too.
-		if ( ! AuditPress_Request_Guard::allow_request() ) {
+		if ( ! Auditra_Request_Guard::allow_request() ) {
 			return new WP_REST_Response( array( 'error' => 'rate_limited' ), 429 );
 		}
 
 		if ( ! $this->auth->verify( (string) $request->get_param( 'token' ) ) ) {
-			AuditPress_Request_Guard::log_failed_auth();
+			Auditra_Request_Guard::log_failed_auth();
 			return new WP_REST_Response( array( 'error' => 'unauthorized' ), 401 );
 		}
 
@@ -354,8 +354,8 @@ class AuditPress_MCP_Server {
 
 		$result_meta                           = isset( $result['_meta'] ) && is_array( $result['_meta'] ) ? $result['_meta'] : array();
 		$result_meta[ self::META_SERVER_INFO ] = array(
-			'name'    => 'AuditPress',
-			'version' => AUDITPRESS_VERSION,
+			'name'    => 'Auditra',
+			'version' => AUDITRA_VERSION,
 		);
 		$result['_meta']                       = $result_meta;
 
@@ -401,8 +401,8 @@ class AuditPress_MCP_Server {
 			'protocolVersion' => $version,
 			'capabilities'    => array( 'tools' => new stdClass() ),
 			'serverInfo'      => array(
-				'name'    => 'AuditPress',
-				'version' => AUDITPRESS_VERSION,
+				'name'    => 'Auditra',
+				'version' => AUDITRA_VERSION,
 			),
 		);
 	}
@@ -568,7 +568,7 @@ class AuditPress_MCP_Server {
 		 *
 		 * @param string[] $allowed Allowed host:port authorities.
 		 */
-		$allowed = apply_filters( 'auditpress_allowed_origins', $this->site_authorities() );
+		$allowed = apply_filters( 'auditra_allowed_origins', $this->site_authorities() );
 
 		foreach ( (array) $allowed as $entry ) {
 			$entry = strtolower( trim( (string) $entry ) );

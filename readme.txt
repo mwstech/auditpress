@@ -1,4 +1,4 @@
-=== AuditPress ===
+=== Auditra ===
 Contributors: bennyagmailcom
 Tags: ai, mcp, plugins, audit, security
 Requires at least: 6.0
@@ -8,11 +8,11 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A read-only MCP server for WordPress. Connect Claude or any MCP client and query your plugin estate for vulnerabilities, bloat, and cruft.
+MCP server for WordPress plugin audits
 
 == Description ==
 
-AuditPress turns a WordPress site into a read-only MCP server. Enable the endpoint, generate a token, paste the URL into your client's connector settings, and you have nine tools against the live site.
+Auditra turns a WordPress site into a read-only MCP server. Enable the endpoint, generate a token, paste the URL into your client's connector settings, and you have nine tools against the live site.
 
 **The tools**
 
@@ -42,7 +42,7 @@ Enrichment comes from api.wordpress.org, wpvulnerability.net, and endoflife.date
 
 = The endpoint, stated plainly =
 
-AuditPress exposes information about your site over an authenticated HTTP endpoint. You should understand exactly what that means before enabling it:
+Auditra exposes information about your site over an authenticated HTTP endpoint. You should understand exactly what that means before enabling it:
 
 * **On install, the endpoint is disabled and inert.** It answers 404 to everything until an administrator explicitly enables it and generates an access token. A fresh install exposes nothing.
 * **When enabled, anyone holding the token URL can read:** your plugin list with names, versions, and health flags; WordPress, PHP, and database versions; vulnerability findings matched to your installed versions; autoloaded option names and sizes; cron hook names and schedules; database table names, sizes, and approximate row counts; and shortcode/block usage counts. Treat the connection URL like a password.
@@ -53,31 +53,39 @@ AuditPress exposes information about your site over an authenticated HTTP endpoi
 
 == External services ==
 
-To enrich its answers, AuditPress contacts three public services. In every case the only data transmitted is plugin slugs and version strings. No site content, no URLs (beyond the API hosts), no user data, and no personal data ever leave your site. All three degrade silently: if a service is unreachable, the affected fields are absent and the response says which source was unavailable.
+To enrich its answers, Auditra contacts three public services. In every case the only data transmitted is plugin slugs and version strings. No site content, no URLs (beyond the API hosts), no user data, and no personal data ever leave your site. All three degrade silently: if a service is unreachable, the affected fields are absent and the response says which source was unavailable.
 
 **1. WordPress.org Plugin API** (https://api.wordpress.org/)
-Sent: plugin slugs, when you (or your AI client) request plugin health information; cached 24 hours.
-Answers: last-updated dates, tested-up-to versions, active install counts, ratings, support activity.
-Terms and privacy: https://wordpress.org/about/privacy/
+What it is: the official plugin directory API, run by WordPress.org, which serves the public listing data for plugins hosted there.
+What is sent: plugin slugs, one request per installed plugin. Nothing else — no site URL, no version of your site, no identifiers.
+When it is sent: only while answering a `list_plugins` or `get_plugin_details` call from your MCP client. Never on a page load, never on a schedule. Cached 24 hours, so repeat questions send nothing.
+What comes back: last-updated dates, tested-up-to versions, active install counts, ratings, support activity.
+Terms of service: https://central.wordpress.org/tos/
+Privacy policy: https://wordpress.org/about/privacy/
 
 **2. WPVulnerability** (https://www.wpvulnerability.net/)
-Sent: plugin slugs and your WordPress core version, when vulnerability data is requested; cached 12 hours.
-Answers: published vulnerability records with CVE identifiers, CVSS scores, and affected version ranges.
-Privacy: https://www.wpvulnerability.com/privacy/
+What it is: a free, volunteer-run database of published WordPress security advisories, operated from Spain by the maintainer of robotstxt.es.
+What is sent: plugin slugs, one request per installed plugin, plus your WordPress core version string on the core lookup. Nothing else.
+When it is sent: only while answering a `check_vulnerabilities`, `list_plugins`, or `get_plugin_details` call from your MCP client. Never on a page load, never on a schedule. Cached 12 hours, and up to 72 hours when the service is unreachable.
+What comes back: published vulnerability records with CVE identifiers, CVSS scores, affected version ranges, and supply-chain audit verdicts.
+Terms and legal notice: https://www.robotstxt.es/legal/
+Privacy policy: https://www.wpvulnerability.com/privacy/
 
 **3. endoflife.date** (https://endoflife.date/)
-Sent: product names only — literally the strings "php", "wordpress", "mysql", or "mariadb"; cached 7 days.
-Answers: support and end-of-life dates for the versions you run.
-It is an open-source community project: https://github.com/endoflife-date/endoflife.date
+What it is: an open-source community project that tracks support and end-of-life dates for software products. Source and licence: https://github.com/endoflife-date/endoflife.date
+What is sent: product names only — the strings "php", "wordpress", and your database flavour ("mysql" or "mariadb"). The version you run is compared locally against the reply and is never part of the request. No slugs, no site data of any kind.
+When it is sent: only while answering a `get_site_overview` or `list_plugins` call from your MCP client. Never on a page load, never on a schedule. Cached 7 days.
+What comes back: release-cycle support and end-of-life dates for the versions you run.
+Terms and privacy: this project publishes no terms of service and no privacy policy. It is a static, unauthenticated public API, and the requests above carry no data capable of identifying your site. If that is not acceptable to you, block the host using WordPress's own `WP_HTTP_BLOCK_EXTERNAL` and `WP_ACCESSIBLE_HOSTS` constants, which this plugin honours for all three services; the affected fields are then simply absent and every other answer is unaffected.
 
 = Supporting the data sources =
 
-WPVulnerability is a free, volunteer-run service that this plugin (and the whole WordPress security ecosystem) depends on. If AuditPress is useful to you, consider supporting them: https://www.wpvulnerability.com/sponsorship/
+WPVulnerability is a free, volunteer-run service that this plugin (and the whole WordPress security ecosystem) depends on. If Auditra is useful to you, consider supporting them: https://www.wpvulnerability.com/sponsorship/
 
 == Installation ==
 
-1. Install and activate AuditPress.
-2. Go to **Tools → AuditPress**.
+1. Install and activate Auditra.
+2. Go to **Tools → Auditra**.
 3. Enable the MCP endpoint and generate an access token.
 4. Copy the connection URL and add it to your AI client as a custom connector (in Claude: Settings → Connectors → Add custom connector).
 5. Ask your assistant something real: "Which of my plugins have known vulnerabilities?" or "What did old plugins leave behind in my database?"
@@ -96,11 +104,11 @@ Clients on `2026-07-28` receive a 24-hour freshness hint on the tool list, so a 
 
 = How does authentication work? =
 
-A bearer token in the URL path: `POST /wp-json/auditpress/v1/mcp/{token}`. Generated from `random_bytes(32)`, hex encoded, compared with `hash_equals`, stored in a non-autoloaded option. `permission_callback` returns true and authentication happens inside the handler so error shapes stay under the plugin's control: 404 when the endpoint is disabled, 401 on a bad token, 429 past the rate limit (60/min per IP, filterable via `auditpress_rate_limit`). No OAuth — token-in-path is the permanent design.
+A bearer token in the URL path: `POST /wp-json/auditra/v1/mcp/{token}`. Generated from `random_bytes(32)`, hex encoded, compared with `hash_equals`, stored in a non-autoloaded option. `permission_callback` returns true and authentication happens inside the handler so error shapes stay under the plugin's control: 404 when the endpoint is disabled, 401 on a bad token, 429 past the rate limit (60/min per IP, filterable via `auditra_rate_limit`). No OAuth — token-in-path is the permanent design.
 
 = Can I extend or tune it? =
 
-Tools are auto-discovered from `includes/mcp/tools/`: one file per tool, each declaring its own name, description, and JSON Schema. Filters: `auditpress_rate_limit`, `auditpress_http_timeout`, and `auditpress_vulnerability_provider` — the last swaps the vulnerability data source for any class implementing the provider interface, which is one file (see CONTRIBUTING.md). Attribution accuracy comes from `includes/data/prefix-overrides.json`, a curated slug-to-prefix map that takes pull requests — the easiest useful contribution.
+Tools are auto-discovered from `includes/mcp/tools/`: one file per tool, each declaring its own name, description, and JSON Schema. Filters: `auditra_rate_limit`, `auditra_http_timeout`, and `auditra_vulnerability_provider` — the last swaps the vulnerability data source for any class implementing the provider interface, which is one file (see CONTRIBUTING.md). Attribution accuracy comes from `includes/data/prefix-overrides.json`, a curated slug-to-prefix map that takes pull requests — the easiest useful contribution.
 
 = Is this safe to run on a production site? =
 
@@ -122,13 +130,13 @@ A vulnerability is a bug in a release. A supply-chain audit is the other kind of
 
 These are reported separately and never mixed into the CVE list, because they mean different things and carry no CVE or severity score. Verdicts are `malicious` (attacker-supplied code confirmed in the affected versions), `suspicious` (changes consistent with a compromise, unconfirmed), and `cleaned` (compromised, later fixed in a clean release — which says nothing about a site still running an affected version). Where an audit publishes its range as a repository revision rather than a version number, the entry is still reported, marked as undetermined rather than quietly dropped.
 
-**These verdicts are WPVulnerability's, not AuditPress's.** They are reproduced exactly as published, identified by audit ID and publication date. AuditPress does not analyse plugin code, reaches no independent conclusion about any plugin or its authors, and neither endorses nor disputes a verdict. It reports that an audit exists, what it says, and whether your installed version falls inside the range it names.
+**These verdicts are WPVulnerability's, not Auditra's.** They are reproduced exactly as published, identified by audit ID and publication date. Auditra does not analyse plugin code, reaches no independent conclusion about any plugin or its authors, and neither endorses nor disputes a verdict. It reports that an audit exists, what it says, and whether your installed version falls inside the range it names.
 
 A supply-chain verdict is a serious accusation by a third party about someone else's software. Attribute it to its source, and take any question about a specific verdict — its evidence, its accuracy, or its removal — to WPVulnerability at https://www.wpvulnerability.net/ rather than to us or to the plugin's author.
 
 = Why doesn't it give my site a score? =
 
-Because scores would be invented. AuditPress reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the model reading them, which can weigh actual context instead of applying a formula.
+Because scores would be invented. Auditra reports measurable facts — versions, dates, sizes, counts, published CVEs — and leaves judgment to the model reading them, which can weigh actual context instead of applying a formula.
 
 = Does a zero usage count mean a plugin is safe to delete? =
 
@@ -151,7 +159,7 @@ If a source is unreachable but cached data survives, that data is served and lab
 == Screenshots ==
 
 1. The settings page: enable toggle, connection URL with copy button, and the disclosure of exactly what is exposed.
-2. An AI assistant answering "which of my plugins are vulnerable?" through AuditPress, with version-matched CVE findings.
+2. An AI assistant answering "which of my plugins are vulnerable?" through Auditra, with version-matched CVE findings.
 3. An AI assistant reconstructing a site's deletion history from orphaned tables, orphaned cron jobs, and leftover autoloaded options.
 
 == Changelog ==

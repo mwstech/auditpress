@@ -2,7 +2,7 @@
 /**
  * The get_plugin_details tool.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * collector and enrichment source. The five-slug cap is what keeps this from
  * blowing the context window; it is enforced server-side.
  */
-class AuditPress_Tool_Get_Plugin_Details {
+class Auditra_Tool_Get_Plugin_Details {
 
 	const MAX_SLUGS = 5;
 
@@ -28,7 +28,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 	/**
 	 * Registers the tool.
 	 *
-	 * @param AuditPress_Tool_Registry $registry Tool registry.
+	 * @param Auditra_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -60,7 +60,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 	public static function run( $args ) {
 		$slugs = isset( $args['slugs'] ) && is_array( $args['slugs'] ) ? array_slice( array_map( 'strval', $args['slugs'] ), 0, self::MAX_SLUGS ) : array();
 		if ( array() === $slugs ) {
-			return AuditPress_Tool_Registry::with_meta(
+			return Auditra_Tool_Registry::with_meta(
 				array( 'error' => 'The slugs argument is required: an array of 1 to 5 plugin slugs.' ),
 				0,
 				0,
@@ -68,7 +68,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 			);
 		}
 
-		$inventory = new AuditPress_Inventory_Collector();
+		$inventory = new Auditra_Inventory_Collector();
 		$records   = array();
 		$all_slugs = array();
 		foreach ( $inventory->collect() as $record ) {
@@ -78,10 +78,10 @@ class AuditPress_Tool_Get_Plugin_Details {
 			}
 		}
 
-		$manager     = new AuditPress_Enrichment_Manager();
-		$wporg       = new AuditPress_WPOrg_Client( $manager );
-		$vulns       = AuditPress_Tool_Check_Vulnerabilities::provider( $manager );
-		$attribution = new AuditPress_Attribution( $all_slugs );
+		$manager     = new Auditra_Enrichment_Manager();
+		$wporg       = new Auditra_WPOrg_Client( $manager );
+		$vulns       = Auditra_Tool_Check_Vulnerabilities::provider( $manager );
+		$attribution = new Auditra_Attribution( $all_slugs );
 
 		$found_slugs   = array_keys( $records );
 		$wporg_map     = $wporg->records( $found_slugs );
@@ -120,7 +120,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 					'update_available' => $record['update_available'],
 					'latest_version'   => $record['latest_version'],
 					'auto_update'      => $record['auto_update'],
-					'disk_size'        => AuditPress_Tool_Registry::format_bytes( $record['disk_size'] ),
+					'disk_size'        => Auditra_Tool_Registry::format_bytes( $record['disk_size'] ),
 					'file_count'       => $record['file_count'],
 				),
 			);
@@ -140,7 +140,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 					$findings[] = $finding;
 				}
 			}
-			$findings = AuditPress_Tool_Check_Vulnerabilities::by_severity( $findings );
+			$findings = Auditra_Tool_Check_Vulnerabilities::by_severity( $findings );
 			// Absent, not empty: a plugin nobody could check must not carry a
 			// field that reads as "no vulnerabilities" (docs/DECISIONS.md 51).
 			if ( in_array( $slug, $vuln_result['unchecked'], true ) ) {
@@ -195,7 +195,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 			$details[] = $detail;
 		}
 
-		return AuditPress_Tool_Registry::with_meta(
+		return Auditra_Tool_Registry::with_meta(
 			array( 'plugins' => $details ),
 			count( $details ),
 			count( $details ),
@@ -207,11 +207,11 @@ class AuditPress_Tool_Get_Plugin_Details {
 	/**
 	 * Autoload weight per slug.
 	 *
-	 * @param AuditPress_Attribution $attribution Attribution engine.
+	 * @param Auditra_Attribution $attribution Attribution engine.
 	 * @return array<string, array>
 	 */
 	private static function autoload_by_slug( $attribution ) {
-		$collector = new AuditPress_Autoload_Collector();
+		$collector = new Auditra_Autoload_Collector();
 		$totals    = array();
 		foreach ( $collector->collect() as $name => $size ) {
 			$owner = $attribution->attribute( $name, 'option' );
@@ -232,7 +232,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 		$out = array();
 		foreach ( $totals as $slug => $total ) {
 			$out[ $slug ] = array(
-				'size'       => AuditPress_Tool_Registry::format_bytes( $total['bytes'] ),
+				'size'       => Auditra_Tool_Registry::format_bytes( $total['bytes'] ),
 				'options'    => $total['options'],
 				'confidence' => $total['confidence'],
 			);
@@ -243,11 +243,11 @@ class AuditPress_Tool_Get_Plugin_Details {
 	/**
 	 * Cron events per slug.
 	 *
-	 * @param AuditPress_Attribution $attribution Attribution engine.
+	 * @param Auditra_Attribution $attribution Attribution engine.
 	 * @return array<string, array[]>
 	 */
 	private static function cron_by_slug( $attribution ) {
-		$collector = new AuditPress_Cron_Collector();
+		$collector = new Auditra_Cron_Collector();
 		$out       = array();
 		foreach ( $collector->collect() as $event ) {
 			$owner = $attribution->attribute( $event['hook'], 'hook' );
@@ -266,11 +266,11 @@ class AuditPress_Tool_Get_Plugin_Details {
 	/**
 	 * Tables per slug.
 	 *
-	 * @param AuditPress_Attribution $attribution Attribution engine.
+	 * @param Auditra_Attribution $attribution Attribution engine.
 	 * @return array<string, array[]>
 	 */
 	private static function tables_by_slug( $attribution ) {
-		$collector = new AuditPress_Database_Collector();
+		$collector = new Auditra_Database_Collector();
 		$out       = array();
 		foreach ( $collector->collect() as $table ) {
 			$owner = $attribution->attribute( $table['stripped_name'], 'table' );
@@ -280,7 +280,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 			$out[ $owner['slug'] ][] = array(
 				'table'       => $table['name'],
 				'rows_approx' => $table['rows_approx'],
-				'data_size'   => AuditPress_Tool_Registry::format_bytes( $table['data_bytes'] ),
+				'data_size'   => Auditra_Tool_Registry::format_bytes( $table['data_bytes'] ),
 			);
 		}
 		return $out;
@@ -292,7 +292,7 @@ class AuditPress_Tool_Get_Plugin_Details {
 	 * @return array<string, array>
 	 */
 	private static function usage_by_slug() {
-		$collector = new AuditPress_Usage_Collector();
+		$collector = new Auditra_Usage_Collector();
 		$features  = $collector->features_by_plugin();
 
 		$out = array();

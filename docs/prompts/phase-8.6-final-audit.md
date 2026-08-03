@@ -1,4 +1,4 @@
-# CCD Prompt: AuditPress Phase 8.6
+# CCD Prompt: Auditra Phase 8.6
 
 Final audit before submission. Adversarial, not checklist-driven.
 
