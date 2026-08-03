@@ -5,7 +5,7 @@
  * Reads the options table directly. Never selects option values, only names
  * and lengths. Makes no network calls.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Collects autoloaded option names and sizes.
  */
-class AuditPress_Autoload_Collector {
+class Auditra_Autoload_Collector {
 
 	/**
 	 * Maximum autoloaded options examined in one pass.

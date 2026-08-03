@@ -60,11 +60,11 @@ jobs:
           FAIL=0
 
           echo "Checking for forbidden WordPress write functions..."
-          grep -rEn 'activate_plugin|deactivate_plugins|delete_plugins|[A-Za-z_]+_Upgrader' includes/ auditpress.php uninstall.php
+          grep -rEn 'activate_plugin|deactivate_plugins|delete_plugins|[A-Za-z_]+_Upgrader' includes/ auditra.php uninstall.php
           if [ $? -eq 0 ]; then FAIL=1; fi
 
           echo "Checking for forbidden SQL keywords (uppercase, as SQL is written)..."
-          grep -rn --include='*.php' -E '\b(INSERT|UPDATE|DELETE|DROP|ALTER)\b' includes/ auditpress.php
+          grep -rn --include='*.php' -E '\b(INSERT|UPDATE|DELETE|DROP|ALTER)\b' includes/ auditra.php
           if [ $? -eq 0 ]; then FAIL=1; fi
 
           if [ "$FAIL" -eq 1 ]; then

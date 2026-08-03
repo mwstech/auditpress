@@ -4,7 +4,7 @@
  *
  * Reads SHOW TABLE STATUS only. Makes no network calls.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Collects non-core table names and sizes.
  */
-class AuditPress_Database_Collector {
+class Auditra_Database_Collector {
 
 	/**
 	 * Core tables, excluded by explicit allowlist — never by pattern

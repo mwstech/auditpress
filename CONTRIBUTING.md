@@ -1,10 +1,10 @@
-# Contributing to AuditPress
+# Contributing to Auditra
 
 Thanks for considering it. A few things make contributions land smoothly.
 
 ## The easiest useful contribution: prefix overrides
 
-[`includes/data/prefix-overrides.json`](includes/data/prefix-overrides.json) maps plugin slugs to the option and table prefixes they actually use, for the many cases where no algorithm can derive them (Contact Form 7 uses `wpcf7_`; Google's sitemap plugin uses `sm_`). Every entry moves real bytes out of the "unattributed" bucket for every AuditPress user.
+[`includes/data/prefix-overrides.json`](includes/data/prefix-overrides.json) maps plugin slugs to the option and table prefixes they actually use, for the many cases where no algorithm can derive them (Contact Form 7 uses `wpcf7_`; Google's sitemap plugin uses `sm_`). Every entry moves real bytes out of the "unattributed" bucket for every Auditra user.
 
 To add one:
 
@@ -21,9 +21,9 @@ Prefer precision over coverage: a wrong prefix silently misattributes data, whic
 
 ## Adding a vulnerability provider
 
-AuditPress reads vulnerability data from one source, [WPVulnerability](https://www.wpvulnerability.net/). That is a deliberate choice rather than a limitation of the design: a second provider is one file behind an existing seam, and the seam is documented here so a future outage is an afternoon's work rather than a redesign.
+Auditra reads vulnerability data from one source, [WPVulnerability](https://www.wpvulnerability.net/). That is a deliberate choice rather than a limitation of the design: a second provider is one file behind an existing seam, and the seam is documented here so a future outage is an afternoon's work rather than a redesign.
 
-A provider is a class implementing [`AuditPress_Vulnerability_Provider_Interface`](includes/enrichment/interface-vulnerability-provider.php) — four methods:
+A provider is a class implementing [`Auditra_Vulnerability_Provider_Interface`](includes/enrichment/interface-vulnerability-provider.php) — four methods:
 
 | Method | Returns |
 |---|---|
@@ -33,11 +33,11 @@ A provider is a class implementing [`AuditPress_Vulnerability_Provider_Interface
 | `supply_chain_map( $slug_versions )` | `slug => verdict|'undetermined'|false|null`. Separate from the vulnerability map on purpose. |
 | `core_findings( $wp_version )` | Findings for WordPress core, or `null` when unavailable. |
 
-Register it with the `auditpress_vulnerability_provider` filter:
+Register it with the `auditra_vulnerability_provider` filter:
 
 ```php
 add_filter(
-	'auditpress_vulnerability_provider',
+	'auditra_vulnerability_provider',
 	function ( $provider, $manager ) {
 		require_once __DIR__ . '/class-my-provider.php';
 		return new My_Vulnerability_Provider( $manager );
@@ -57,7 +57,7 @@ Four obligations come with the seam, and a provider that breaks them will produc
 4. **Report scores as published.** No invented severities, no normalization across scoring systems.
 5. **Keep supply-chain findings separate, and signed.** A compromised update channel is not a CVE. If your source publishes them, return them in `supply_chain` with a verdict and a `source` field carrying your provider's `name()`, so an entry quoted out of a response keeps its publisher. Mark an entry whose range you cannot resolve as `undetermined` rather than dropping it.
 
-Use `AuditPress_Enrichment_Manager` for HTTP and caching: it provides parallel fetching, the persistent store, escalating backoff, stale-while-unavailable, and the per-source status accounting that populates `_meta.sources`.
+Use `Auditra_Enrichment_Manager` for HTTP and caching: it provides parallel fetching, the persistent store, escalating backoff, stale-while-unavailable, and the per-source status accounting that populates `_meta.sources`.
 
 ## Ground rules for code changes
 

@@ -2,7 +2,7 @@
 /**
  * The get_capabilities tool.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,18 +14,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Phase 0: content is a hardcoded orientation document; the round trip is
  * what matters.
  */
-class AuditPress_Tool_Get_Capabilities {
+class Auditra_Tool_Get_Capabilities {
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param AuditPress_Tool_Registry $registry Tool registry.
+	 * @param Auditra_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
 		$registry->register(
 			'get_capabilities',
-			'Describes what this AuditPress server can and cannot answer about the WordPress site it runs on. Call this first to orient yourself.',
+			'Describes what this Auditra server can and cannot answer about the WordPress site it runs on. Call this first to orient yourself.',
 			array(
 				'type'       => 'object',
 				'properties' => new stdClass(),
@@ -41,8 +41,8 @@ class AuditPress_Tool_Get_Capabilities {
 	 */
 	public static function run() {
 		$capabilities = array(
-			'server'            => 'AuditPress',
-			'version'           => AUDITPRESS_VERSION,
+			'server'            => 'Auditra',
+			'version'           => AUDITRA_VERSION,
 			'read_only'         => true,
 			'description'       => 'A read-only MCP server for inspecting this WordPress site\'s plugin estate. It reports facts, never verdicts; analysis is the client\'s job.',
 			'available_now'     => array(
@@ -61,7 +61,7 @@ class AuditPress_Tool_Get_Capabilities {
 			'tool_list_note'    => 'If a tool listed in available_now does not appear in your tool list, your tool list is stale. On MCP revision 2026-07-28 the tools/list response carries a 24-hour ttlMs, so a stale list refreshes itself within a day; on older protocol revisions there is no expiry signal, so refresh by reconnecting to this server.',
 			'supply_chain_note' => array(
 				'what_this_is'  => 'A supply-chain audit is a finding about the plugin\'s update channel rather than about a bug in its code: someone with publishing rights shipped a release the original author did not write. It carries no CVE and no CVSS score, so it is returned in its own supply_chain array by check_vulnerabilities and get_plugin_details, is never merged into findings, and is never paginated away. On list_plugins it appears as its own flag, separate from has_vulnerability.',
-				'attribution'   => 'Every supply_chain entry carries a source field naming its publisher, so a finding quoted out of this response keeps its attribution. These verdicts are published by WPVulnerability and are reproduced here exactly as published, identified by their audit ID and publication date. AuditPress performs no analysis of its own on plugin code, reaches no independent conclusion about any plugin or its authors, and neither endorses nor disputes a verdict. It reports that an audit exists, what it says, and whether the installed version falls inside the range it names. A verdict is an accusation made by a third party about software someone else wrote: weigh it as such, attribute it to its source rather than to this site, and direct any question about a specific verdict, its evidence, or its accuracy to WPVulnerability at https://www.wpvulnerability.net/, not to AuditPress or to the site being audited.',
+				'attribution'   => 'Every supply_chain entry carries a source field naming its publisher, so a finding quoted out of this response keeps its attribution. These verdicts are published by WPVulnerability and are reproduced here exactly as published, identified by their audit ID and publication date. Auditra performs no analysis of its own on plugin code, reaches no independent conclusion about any plugin or its authors, and neither endorses nor disputes a verdict. It reports that an audit exists, what it says, and whether the installed version falls inside the range it names. A verdict is an accusation made by a third party about software someone else wrote: weigh it as such, attribute it to its source rather than to this site, and direct any question about a specific verdict, its evidence, or its accuracy to WPVulnerability at https://www.wpvulnerability.net/, not to Auditra or to the site being audited.',
 				'verdicts'      => array(
 					'malicious'  => 'The audit found code in the affected versions that does not belong to the plugin: the release was compromised, not merely suspect. Treat an installed version inside the affected range as running attacker-supplied code.',
 					'suspicious' => 'The audit found changes consistent with a compromise but did not confirm malicious behavior. Unresolved, not cleared.',
@@ -100,6 +100,6 @@ class AuditPress_Tool_Get_Capabilities {
 			),
 		);
 
-		return AuditPress_Tool_Registry::with_meta( $capabilities, 1, 1, false );
+		return Auditra_Tool_Registry::with_meta( $capabilities, 1, 1, false );
 	}
 }

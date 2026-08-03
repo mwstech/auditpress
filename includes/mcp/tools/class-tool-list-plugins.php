@@ -2,7 +2,7 @@
 /**
  * The list_plugins tool.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Paginated plugin inventory. Compact rows by default, detail on request.
  * This phase carries only flags knowable without network access.
  */
-class AuditPress_Tool_List_Plugins {
+class Auditra_Tool_List_Plugins {
 
 	const DEFAULT_LIMIT = 25;
 	const MAX_LIMIT     = 100;
@@ -26,7 +26,7 @@ class AuditPress_Tool_List_Plugins {
 	/**
 	 * Registers the tool.
 	 *
-	 * @param AuditPress_Tool_Registry $registry Tool registry.
+	 * @param Auditra_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -85,7 +85,7 @@ class AuditPress_Tool_List_Plugins {
 		$limit      = max( 1, min( $max_limit, $limit ) );
 		$offset     = isset( $args['offset'] ) ? max( 0, (int) $args['offset'] ) : 0;
 
-		$collector = new AuditPress_Inventory_Collector();
+		$collector = new Auditra_Inventory_Collector();
 		$records   = $collector->collect();
 
 		// Network-derived flags (docs/DECISIONS.md 18): booleans in the flags
@@ -94,9 +94,9 @@ class AuditPress_Tool_List_Plugins {
 		// nobody looked at. Absent must not read as "no", so a row nobody
 		// could check carries vulnerability_unknown: with neither flag, the
 		// row was checked and is clean (docs/DECISIONS.md 51).
-		$manager       = new AuditPress_Enrichment_Manager();
-		$vuln_client   = AuditPress_Tool_Check_Vulnerabilities::provider( $manager );
-		$wporg_client  = new AuditPress_WPOrg_Client( $manager );
+		$manager       = new Auditra_Enrichment_Manager();
+		$vuln_client   = Auditra_Tool_Check_Vulnerabilities::provider( $manager );
+		$wporg_client  = new Auditra_WPOrg_Client( $manager );
 		$slug_versions = array();
 		foreach ( $records as $record ) {
 			if ( in_array( $record['status'], array( 'active', 'inactive' ), true ) ) {
@@ -110,7 +110,7 @@ class AuditPress_Tool_List_Plugins {
 		// Release cycles place a tested-up-to value relative to the current
 		// WordPress release without pretending minor-version arithmetic works
 		// across majors (6.9 -> 7.0).
-		$eol_client  = new AuditPress_Endoflife_Client( $manager );
+		$eol_client  = new Auditra_Endoflife_Client( $manager );
 		$cycle_index = null;
 		$cycles      = $eol_client->cycles( 'WordPress' );
 		if ( null !== $cycles ) {
@@ -179,7 +179,7 @@ class AuditPress_Tool_List_Plugins {
 			$payload['coverage'] = $coverage;
 		}
 
-		return AuditPress_Tool_Registry::with_meta(
+		return Auditra_Tool_Registry::with_meta(
 			$payload,
 			$total,
 			count( $rows ),
@@ -192,7 +192,7 @@ class AuditPress_Tool_List_Plugins {
 	 * Overall status counts, independent of the active filter, so the client
 	 * always sees the shape of the whole site.
 	 *
-	 * @param AuditPress_Inventory_Collector $collector Collector (reuses its cache).
+	 * @param Auditra_Inventory_Collector $collector Collector (reuses its cache).
 	 * @return array
 	 */
 	private static function status_counts( $collector ) {
@@ -246,7 +246,7 @@ class AuditPress_Tool_List_Plugins {
 			if ( $record['auto_update'] ) {
 				$row['auto_update'] = true;
 			}
-			$row['disk_size']  = AuditPress_Tool_Registry::format_bytes( $record['disk_size'] );
+			$row['disk_size']  = Auditra_Tool_Registry::format_bytes( $record['disk_size'] );
 			$row['file_count'] = $record['file_count'];
 
 			// Raw wordpress.org figures live in detail mode only; compact

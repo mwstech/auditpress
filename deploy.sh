@@ -16,7 +16,7 @@
 set -euo pipefail
 
 REMOTE="pluginlens-test"
-REMOTE_PATH="domains/outsourcewebdesign.com/public_html/wp-content/plugins/auditpress/"
+REMOTE_PATH="domains/outsourcewebdesign.com/public_html/wp-content/plugins/auditra/"
 
 cd "$(dirname "$0")"
 

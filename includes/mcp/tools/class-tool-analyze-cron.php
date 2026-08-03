@@ -2,7 +2,7 @@
 /**
  * The analyze_cron tool.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,12 +12,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Scheduled events per plugin, plus hooks nothing is listening to.
  */
-class AuditPress_Tool_Analyze_Cron {
+class Auditra_Tool_Analyze_Cron {
 
 	/**
 	 * Registers the tool.
 	 *
-	 * @param AuditPress_Tool_Registry $registry Tool registry.
+	 * @param Auditra_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -38,14 +38,14 @@ class AuditPress_Tool_Analyze_Cron {
 	 * @return string JSON string.
 	 */
 	public static function run() {
-		$inventory = new AuditPress_Inventory_Collector();
+		$inventory = new Auditra_Inventory_Collector();
 		$slugs     = array();
 		foreach ( $inventory->collect() as $record ) {
 			$slugs[] = $record['slug'];
 		}
-		$attribution = new AuditPress_Attribution( $slugs );
+		$attribution = new Auditra_Attribution( $slugs );
 
-		$collector = new AuditPress_Cron_Collector();
+		$collector = new Auditra_Cron_Collector();
 		$events    = $collector->collect();
 
 		$by_owner = array();
@@ -82,6 +82,6 @@ class AuditPress_Tool_Analyze_Cron {
 			'orphan_note'      => 'Orphaned means no callback was registered for the hook at runtime with all active plugins loaded. A plugin that registers its callback conditionally (for example only in admin) can appear here without being a true orphan.',
 		);
 
-		return AuditPress_Tool_Registry::with_meta( $payload, count( $events ), count( $events ), false );
+		return Auditra_Tool_Registry::with_meta( $payload, count( $events ), count( $events ), false );
 	}
 }

@@ -5,14 +5,14 @@
  * The transport layer depends only on the interface below, so the token
  * mechanism can be swapped for OAuth without touching the transport.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-interface AuditPress_Auth_Interface {
+interface Auditra_Auth_Interface {
 
 	/**
 	 * Whether the MCP endpoint is enabled at all.
@@ -33,10 +33,10 @@ interface AuditPress_Auth_Interface {
 /**
  * Shared-secret token authentication. Token lives in a non-autoloaded option.
  */
-class AuditPress_Token_Auth implements AuditPress_Auth_Interface {
+class Auditra_Token_Auth implements Auditra_Auth_Interface {
 
-	const OPTION_ENABLED = 'auditpress_enabled';
-	const OPTION_TOKEN   = 'auditpress_token';
+	const OPTION_ENABLED = 'auditra_enabled';
+	const OPTION_TOKEN   = 'auditra_token';
 
 	/**
 	 * Whether the admin has switched the endpoint on.
@@ -71,7 +71,7 @@ class AuditPress_Token_Auth implements AuditPress_Auth_Interface {
 		$token = bin2hex( random_bytes( 32 ) );
 		delete_option( self::OPTION_TOKEN );
 		add_option( self::OPTION_TOKEN, $token, '', false );
-		delete_option( AuditPress_Request_Guard::OPTION_AUTH_LOG );
+		delete_option( Auditra_Request_Guard::OPTION_AUTH_LOG );
 		return $token;
 	}
 }
@@ -80,12 +80,12 @@ class AuditPress_Token_Auth implements AuditPress_Auth_Interface {
  * Per-request protections for the MCP endpoint: rate limiting and the failed
  * authentication log.
  */
-class AuditPress_Request_Guard {
+class Auditra_Request_Guard {
 
-	const OPTION_AUTH_LOG = 'auditpress_auth_log';
+	const OPTION_AUTH_LOG = 'auditra_auth_log';
 	const AUTH_LOG_MAX    = 50;
 	const DEFAULT_LIMIT   = 60;
-	const RATE_TRANSIENT  = 'auditpress_rate_buckets';
+	const RATE_TRANSIENT  = 'auditra_rate_buckets';
 
 	/**
 	 * Transient-backed per-IP rate limit. Returns true when the request is
@@ -99,7 +99,7 @@ class AuditPress_Request_Guard {
 		 *
 		 * @param int $limit Default 60.
 		 */
-		$limit = max( 1, (int) apply_filters( 'auditpress_rate_limit', self::DEFAULT_LIMIT ) );
+		$limit = max( 1, (int) apply_filters( 'auditra_rate_limit', self::DEFAULT_LIMIT ) );
 
 		// One named transient holding every IP bucket, so uninstall can
 		// remove it by name; per-IP keys would be unenumerable without the

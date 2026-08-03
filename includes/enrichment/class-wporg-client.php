@@ -14,7 +14,7 @@
  * cache must not depend on the object cache. Returns data or null, never
  * throws. Caches 24 hours.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Answers "what does wordpress.org know about these plugins?".
  */
-class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface {
+class Auditra_WPOrg_Client implements Auditra_Enrichment_Client_Interface {
 
 	const HOST      = 'api.wordpress.org';
 	const CACHE_TTL = DAY_IN_SECONDS;
@@ -42,16 +42,16 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 	/**
 	 * Shared manager.
 	 *
-	 * @var AuditPress_Enrichment_Manager
+	 * @var Auditra_Enrichment_Manager
 	 */
 	private $manager;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditPress_Enrichment_Manager $manager Shared manager.
+	 * @param Auditra_Enrichment_Manager $manager Shared manager.
 	 */
-	public function __construct( AuditPress_Enrichment_Manager $manager ) {
+	public function __construct( Auditra_Enrichment_Manager $manager ) {
 		$this->manager = $manager;
 	}
 
@@ -94,7 +94,7 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 			}
 			if ( 'blocked' === $lookup['state'] ) {
 				$out[ $slug ] = null;
-				$this->manager->record_unavailable( $this->name(), AuditPress_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
+				$this->manager->record_unavailable( $this->name(), Auditra_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
 				continue;
 			}
 			$to_fetch[]        = $slug;
@@ -108,7 +108,7 @@ class AuditPress_WPOrg_Client implements AuditPress_Enrichment_Client_Interface 
 		if ( $this->manager->is_blocked( self::HOST ) ) {
 			// Configuration, not failure: no negative cache.
 			foreach ( $to_fetch as $slug ) {
-				$out[ $slug ] = $this->degrade( $fallback[ $slug ], AuditPress_Enrichment_Manager::REASON_NO_OUTBOUND );
+				$out[ $slug ] = $this->degrade( $fallback[ $slug ], Auditra_Enrichment_Manager::REASON_NO_OUTBOUND );
 			}
 			return $out;
 		}

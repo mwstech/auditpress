@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: AuditPress Supply-Chain Mock (test fixture)
+ * Plugin Name: Auditra Supply-Chain Mock (test fixture)
  * Description: Injects WPVulnerability supply-chain audit entries in the live-verified shape, including the trunk-revision range that no version comparison can resolve. Copy into mu-plugins for verification, remove after. Never ships.
  * Version: 1.0
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 add_filter(
-	'auditpress_wpvulnerability_body',
+	'auditra_wpvulnerability_body',
 	function ( $body, $type, $key ) {
 		if ( 'plugin' !== $type || null === $body ) {
 			return $body;

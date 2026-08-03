@@ -2,7 +2,7 @@
 /**
  * The check_vulnerabilities tool.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -31,7 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * a CVSS-sorted findings list would both mislabel and bury them
  * (docs/DECISIONS.md 57).
  */
-class AuditPress_Tool_Check_Vulnerabilities {
+class Auditra_Tool_Check_Vulnerabilities {
 
 	const STATE_COMPLETE       = 'complete';
 	const STATE_COMPLETE_STALE = 'complete_stale';
@@ -60,7 +60,7 @@ class AuditPress_Tool_Check_Vulnerabilities {
 	/**
 	 * Registers the tool.
 	 *
-	 * @param AuditPress_Tool_Registry $registry Tool registry.
+	 * @param Auditra_Tool_Registry $registry Tool registry.
 	 * @return void
 	 */
 	public static function register( $registry ) {
@@ -112,7 +112,7 @@ class AuditPress_Tool_Check_Vulnerabilities {
 		$limit        = max( 1, min( self::MAX_LIMIT, $limit ) );
 		$offset       = isset( $args['offset'] ) ? max( 0, (int) $args['offset'] ) : 0;
 
-		$collector     = new AuditPress_Inventory_Collector();
+		$collector     = new Auditra_Inventory_Collector();
 		$slug_versions = array();
 		foreach ( $collector->collect() as $record ) {
 			// mu-plugins and drop-ins have no wp.org identity to look up.
@@ -125,7 +125,7 @@ class AuditPress_Tool_Check_Vulnerabilities {
 			$slug_versions[ $record['slug'] ] = $record['version'];
 		}
 
-		$manager  = new AuditPress_Enrichment_Manager();
+		$manager  = new Auditra_Enrichment_Manager();
 		$provider = self::provider( $manager );
 
 		$result = $provider->plugin_findings( $slug_versions );
@@ -151,7 +151,7 @@ class AuditPress_Tool_Check_Vulnerabilities {
 				'reason'   => self::reason( $manager ),
 				'coverage' => $coverage,
 			);
-			return AuditPress_Tool_Registry::with_meta( $payload, null, null, false, $manager->source_status() );
+			return Auditra_Tool_Registry::with_meta( $payload, null, null, false, $manager->source_status() );
 		}
 
 		$stale_used = array() !== $result['stale'] || ( null !== $core && ! empty( $core['stale'] ) );
@@ -213,7 +213,7 @@ class AuditPress_Tool_Check_Vulnerabilities {
 			}
 		}
 
-		return AuditPress_Tool_Registry::with_meta(
+		return Auditra_Tool_Registry::with_meta(
 			$payload,
 			$total,
 			count( $page ),
@@ -226,31 +226,31 @@ class AuditPress_Tool_Check_Vulnerabilities {
 	 * The vulnerability provider for this request.
 	 *
 	 * One provider ships. The filter is the seam a second one would arrive
-	 * through: implement AuditPress_Vulnerability_Provider_Interface in one
+	 * through: implement Auditra_Vulnerability_Provider_Interface in one
 	 * file and return an instance here. See CONTRIBUTING.md.
 	 *
-	 * @param AuditPress_Enrichment_Manager $manager Shared manager.
-	 * @return AuditPress_Vulnerability_Provider_Interface
+	 * @param Auditra_Enrichment_Manager $manager Shared manager.
+	 * @return Auditra_Vulnerability_Provider_Interface
 	 */
 	public static function provider( $manager ) {
-		$default = new AuditPress_WPVulnerability_Client( $manager );
+		$default = new Auditra_WPVulnerability_Client( $manager );
 
 		/**
 		 * Filters the vulnerability data provider.
 		 *
-		 * @param AuditPress_Vulnerability_Provider_Interface $provider Default provider.
-		 * @param AuditPress_Enrichment_Manager               $manager  Shared enrichment manager.
+		 * @param Auditra_Vulnerability_Provider_Interface $provider Default provider.
+		 * @param Auditra_Enrichment_Manager               $manager  Shared enrichment manager.
 		 */
-		$provider = apply_filters( 'auditpress_vulnerability_provider', $default, $manager );
+		$provider = apply_filters( 'auditra_vulnerability_provider', $default, $manager );
 
-		return $provider instanceof AuditPress_Vulnerability_Provider_Interface ? $provider : $default;
+		return $provider instanceof Auditra_Vulnerability_Provider_Interface ? $provider : $default;
 	}
 
 	/**
 	 * Why the check could not run, or ran short: the reason code of the worst
 	 * source status this request. A fact, with no advice attached.
 	 *
-	 * @param AuditPress_Enrichment_Manager $manager Shared manager.
+	 * @param Auditra_Enrichment_Manager $manager Shared manager.
 	 * @return string
 	 */
 	private static function reason( $manager ) {
@@ -259,7 +259,7 @@ class AuditPress_Tool_Check_Vulnerabilities {
 				return $status['reason'];
 			}
 		}
-		return AuditPress_Enrichment_Manager::REASON_NETWORK_ERROR;
+		return Auditra_Enrichment_Manager::REASON_NETWORK_ERROR;
 	}
 
 	/**

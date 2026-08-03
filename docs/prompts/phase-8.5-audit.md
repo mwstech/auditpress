@@ -1,4 +1,4 @@
-# CCD Prompt: AuditPress Phase 8.5
+# CCD Prompt: Auditra Phase 8.5
 
 Pre-submission audit. No new features, no new behavior.
 
@@ -24,10 +24,10 @@ Report anything in the current guidelines that this plugin does not satisfy, bef
 
 ## B. Plugin Check
 
-Install Plugin Check on the Local site. Run it against AuditPress via WP-CLI:
+Install Plugin Check on the Local site. Run it against Auditra via WP-CLI:
 
 ```
-wp plugin check auditpress
+wp plugin check auditra
 ```
 
 Run every category, not only Plugin Repo.
@@ -40,7 +40,7 @@ Report the full before and after output.
 
 ## C. Reserved slug verification
 
-Verify `auditpress` against the official reserved-slugs list. It is one of the reference documents published by the wordpress.org plugin directory MCP server. If the slug is reserved or conflicts with a trademark, stop and tell me immediately, because it changes the text domain, every prefix, and the repository name.
+Verify `auditra` against the official reserved-slugs list. It is one of the reference documents published by the wordpress.org plugin directory MCP server. If the slug is reserved or conflicts with a trademark, stop and tell me immediately, because it changes the text domain, every prefix, and the repository name.
 
 ## D. Dead code removal
 
@@ -98,7 +98,7 @@ Report back when I can read all of these:
 
 1. Your report of anything in the current official guidelines this plugin does not satisfy.
 2. Plugin Check output, before and after, run against the extracted zip.
-3. Confirmation that `auditpress` is not a reserved slug.
+3. Confirmation that `auditra` is not a reserved slug.
 4. The list of everything you removed as dead code, plus anything you flagged but did not remove.
 5. Your adversarial security findings, including issues you judged acceptable and why.
 6. The zip's size and file count, and confirmation it installs and runs clean on a bare WordPress.

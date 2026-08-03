@@ -2,14 +2,14 @@
 /**
  * Contract every enrichment client implements.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-interface AuditPress_Enrichment_Client_Interface {
+interface Auditra_Enrichment_Client_Interface {
 
 	/**
 	 * Short source name used in _meta.sources, e.g. 'endoflife'.

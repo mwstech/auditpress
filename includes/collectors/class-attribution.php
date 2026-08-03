@@ -8,7 +8,7 @@
  * (docs/DECISIONS.md 30). Every result carries its confidence tier and
  * everything unmatched stays visibly unattributed.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Three tiers, tried in order: curated override (high), slug-derived prefix
  * (medium), no match (unattributed).
  */
-class AuditPress_Attribution {
+class Auditra_Attribution {
 
 	const CORE_SLUG = 'wordpress-core';
 
@@ -381,7 +381,7 @@ class AuditPress_Attribution {
 	 * @return array<string, string[]>
 	 */
 	private function overrides() {
-		$path = AUDITPRESS_PLUGIN_DIR . 'includes/data/prefix-overrides.json';
+		$path = AUDITRA_PLUGIN_DIR . 'includes/data/prefix-overrides.json';
 		if ( ! is_readable( $path ) ) {
 			return array();
 		}

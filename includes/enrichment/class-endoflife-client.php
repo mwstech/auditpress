@@ -6,7 +6,7 @@
  * were verified against the live service on 2026-07-27. Returns data or null,
  * never throws. Caches 7 days per product.
  *
- * @package AuditPress
+ * @package Auditra
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Answers "how supported is this version?" for PHP, WordPress, and the
  * database engine.
  */
-class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interface {
+class Auditra_Endoflife_Client implements Auditra_Enrichment_Client_Interface {
 
 	const HOST      = 'endoflife.date';
 	const CACHE_TTL = WEEK_IN_SECONDS;
@@ -33,16 +33,16 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 	/**
 	 * Shared manager.
 	 *
-	 * @var AuditPress_Enrichment_Manager
+	 * @var Auditra_Enrichment_Manager
 	 */
 	private $manager;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditPress_Enrichment_Manager $manager Shared manager.
+	 * @param Auditra_Enrichment_Manager $manager Shared manager.
 	 */
-	public function __construct( AuditPress_Enrichment_Manager $manager ) {
+	public function __construct( Auditra_Enrichment_Manager $manager ) {
 		$this->manager = $manager;
 	}
 
@@ -81,7 +81,7 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 				continue;
 			}
 			if ( 'blocked' === $lookup['state'] ) {
-				$this->manager->record_unavailable( $this->name(), AuditPress_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
+				$this->manager->record_unavailable( $this->name(), Auditra_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
 				continue;
 			}
 			$to_fetch[ $product ] = $version;
@@ -94,7 +94,7 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 
 		if ( $this->manager->is_blocked( self::HOST ) ) {
 			foreach ( $to_fetch as $product => $version ) {
-				$cycles = $this->degrade( $fallback[ $product ], AuditPress_Enrichment_Manager::REASON_NO_OUTBOUND );
+				$cycles = $this->degrade( $fallback[ $product ], Auditra_Enrichment_Manager::REASON_NO_OUTBOUND );
 				if ( null !== $cycles ) {
 					$statuses[ $product ] = $this->match_cycle( $cycles, $product, $version );
 				}
@@ -181,12 +181,12 @@ class AuditPress_Endoflife_Client implements AuditPress_Enrichment_Client_Interf
 			return $lookup['data'];
 		}
 		if ( 'blocked' === $lookup['state'] ) {
-			$this->manager->record_unavailable( $this->name(), AuditPress_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
+			$this->manager->record_unavailable( $this->name(), Auditra_Enrichment_Manager::REASON_BACKOFF, $lookup['next_retry'] );
 			return null;
 		}
 
 		if ( $this->manager->is_blocked( self::HOST ) ) {
-			return $this->degrade( $lookup, AuditPress_Enrichment_Manager::REASON_NO_OUTBOUND );
+			return $this->degrade( $lookup, Auditra_Enrichment_Manager::REASON_NO_OUTBOUND );
 		}
 
 		$bodies = $this->manager->fetch_multiple(
