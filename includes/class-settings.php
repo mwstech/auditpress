@@ -240,7 +240,7 @@ JS;
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'              => self::PAGE_SLUG,
+					'page'           => self::PAGE_SLUG,
 					'auditra_notice' => $notice,
 				),
 				admin_url( 'tools.php' )
